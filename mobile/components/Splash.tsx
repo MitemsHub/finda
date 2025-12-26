@@ -12,7 +12,6 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { useFonts, Inter_900Black, Inter_500Medium } from '@expo-google-fonts/inter';
 import Svg, { Circle, Path, Defs, LinearGradient as LinearGradientSVG, Stop } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
@@ -184,11 +183,6 @@ const CompassIcon = () => (
 );
 
 export default function Splash() {
-  const [fontsLoaded] = useFonts({
-    Inter_900Black,
-    Inter_500Medium,
-  });
-
   // --- Logo Float Animation ---
   const logoTranslateY = useSharedValue(0);
   const logoScale = useSharedValue(1);
@@ -250,10 +244,6 @@ export default function Splash() {
     opacity: slideUpOpacity.value,
     transform: [{ translateY: slideUpTranslateY.value }],
   }));
-
-  if (!fontsLoaded) {
-    return null;
-  }
 
   // --- Mobile Frame Wrapper for Web ---
   const isWeb = Platform.OS === 'web';
