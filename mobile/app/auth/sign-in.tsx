@@ -22,6 +22,11 @@ export default function SignIn() {
     }
   }, [initialRole]);
 
+  const handleSignIn = () => {
+    // Navigate to the main app (Explore tab)
+    router.replace('/(tabs)/explore');
+  };
+
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -123,12 +128,14 @@ export default function SignIn() {
                   <Text style={styles.checkboxLabel}>Remember me</Text>
                 </TouchableOpacity>
                 <TouchableOpacity>
-                  <Text style={styles.forgotPassword}>Forgot Password?</Text>
+                  <Link href="/auth/forgot-password" asChild>
+                    <Text style={styles.forgotPassword}>Forgot Password?</Text>
+                  </Link>
                 </TouchableOpacity>
               </View>
 
               {/* Sign In Button */}
-              <TouchableOpacity style={styles.submitButton}>
+              <TouchableOpacity style={styles.submitButton} onPress={handleSignIn}>
                 <Text style={styles.submitButtonText}>
                   {role === 'business' ? 'Sign In to Dashboard' : 'Sign In'}
                 </Text>
@@ -209,20 +216,21 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6', // Frost-like background
+    backgroundColor: 'white', // Changed to white for full screen feel
+    minHeight: '100%',
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 60, // Add top padding for status bar space
+    paddingBottom: 40,
+    // justifyContent: 'center', // Allow top alignment
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    maxWidth: 480,
-    marginBottom: 24,
+    marginBottom: 40, // More space
     alignItems: 'center',
   },
   logoRow: {
@@ -239,7 +247,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    display: 'none', // Hide on mobile small screens if needed, but show on tablet/web
+    display: 'none', 
   },
   linkText: {
     fontSize: 14,
@@ -250,16 +258,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   card: {
-    backgroundColor: 'white',
-    borderRadius: 24,
-    padding: 32,
+    // Removed card shadow/bg styles to make it flat and full
     width: '100%',
-    maxWidth: 480,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
   },
   title: {
     fontSize: 28,

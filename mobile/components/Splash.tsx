@@ -182,7 +182,19 @@ const CompassIcon = () => (
   </Svg>
 );
 
+import { useRouter } from 'expo-router';
+
 export default function Splash() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace('/auth/sign-in');
+    }, 4000); // 4 seconds delay to show animation
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // --- Logo Float Animation ---
   const logoTranslateY = useSharedValue(0);
   const logoScale = useSharedValue(1);
@@ -380,25 +392,13 @@ export default function Splash() {
   );
 
   if (isWeb) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#f0f0f0', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <View style={{
-          width: 390,
-          height: 844,
-          borderRadius: 40,
-          overflow: 'hidden',
-          backgroundColor: CHARCOAL,
-          borderWidth: 8,
-          borderColor: '#111',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 20 },
-          shadowOpacity: 0.5,
-          shadowRadius: 40,
-        }}>
-          <Content />
-        </View>
-      </View>
-    );
+    // The MobileFrame is now handled in the RootLayout, so we just return content here
+    // But since the Splash screen is a bit unique and might need its own special sizing if rendered alone,
+    // we can keep it flexible. However, to avoid "double frames", we should just return Content
+    // assuming the layout wraps it. BUT, if the user navigates, we want consistency.
+    // The prompt asked for "Mobile Framework" in the layout.
+    // If we wrapped RootLayout with MobileFrame, we don't need it here.
+    return <Content />;
   }
 
   return <Content />;

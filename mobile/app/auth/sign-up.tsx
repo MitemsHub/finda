@@ -24,6 +24,14 @@ export default function SignUp() {
     }
   }, [initialRole]);
 
+  const handleSignUp = () => {
+    // Navigate to verify code
+    router.push({
+      pathname: '/auth/verify-code',
+      params: { email: 'user@example.com' } // Pass actual email state here
+    });
+  };
+
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
@@ -275,13 +283,14 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'white',
+    minHeight: '100%',
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   inlineFooterRow: {
     flexDirection: 'row',
@@ -308,7 +317,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    maxWidth: 480,
     marginBottom: 24,
     alignItems: 'center',
   },
@@ -338,16 +346,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   card: {
-    backgroundColor: 'white',
-    borderRadius: 24,
-    padding: 32,
     width: '100%',
-    maxWidth: 480,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
   },
   title: {
     fontSize: 28,
@@ -430,6 +429,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: CHARCOAL,
     fontFamily: 'Inter_500Medium',
+    outlineStyle: 'none', // Remove default web outline
   },
   checkboxRow: {
     flexDirection: 'row',
