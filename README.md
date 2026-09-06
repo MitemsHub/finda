@@ -63,13 +63,34 @@ Dark mode is class-based via `next-themes`. All text/background pairs target WCA
 | Route | Purpose |
 |---|---|
 | `/` | Landing: hero with live search, featured strip, features, how-it-works, business section, testimonials, CTA |
-| `/search` | Discovery: full-text query, category/neighborhood filters, verified & open-now toggles, sorting |
+| `/search` | Discovery: full-text query, category/neighborhood filters, verified & open-now toggles, map toggle (Leaflet + OSM) |
+| `/store/[slug]` | Shareable storefront: product grid, cart, WhatsApp ordering |
+| `/checkout` → `/orders/[id]` | Guest-friendly checkout (pickup/delivery, Flutterwave-ready) and order tracking |
+| `/feed` | Social feed: offers, events, and follower-only drops from followed businesses |
 | `/business/[id]` | Profile: gallery, services with booking modal, review breakdown, hours, contact |
 | `/dashboard` `/bookings` `/favorites` `/notifications` `/settings` | Signed-in user workspace |
 | `/business/dashboard` | Owner console: overview, bookings, customers, reviews, gallery, settings |
 | `/admin/*` | Platform admin: overview, approvals, businesses, users, categories, broadcasts, settings |
 | `/get-started` | Auth: account-type-aware signup (user vs. business submission → admin approval) |
+| `/api/businesses` `/api/businesses/[slug]` | Public JSON API consumed by the mobile app |
+| `/api/checkout/init` `/api/checkout/verify` `/api/orders/notify` | Server-side Flutterwave init/verify + transactional email |
 | `/api/health` | Health check; reports `demo-mode` when Supabase isn't configured |
+
+## Mobile app (`mobile/`)
+
+Expo 54 + expo-router app sharing the finda design system (teal `#14B8A6`, Playfair headings, Inter body) and consuming the same public API.
+
+- **Tabs:** Home (categories, open-now rail, top-rated), Explore (search + filters + featured), Saved (on-device favorites), Profile
+- **Business detail:** hero, WhatsApp/Call actions, storefront with product ordering over WhatsApp, services, hours, reviews with owner replies, share
+- **Auth flow:** splash → sign-in/sign-up (user vs. business owner), verification code screen (scaffold; live auth lands with Supabase)
+
+```bash
+cd mobile
+bun install
+EXPO_PUBLIC_FINDA_API=https://your-finda-deployment bun start
+```
+
+`EXPO_PUBLIC_FINDA_API` defaults to `http://localhost:3000` for development. Native builds (`ios/`, `android/`) are generated with `npx expo prebuild` when needed.
 
 ## Agent skills
 

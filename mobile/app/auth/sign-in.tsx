@@ -24,7 +24,7 @@ export default function SignIn() {
 
   const handleSignIn = () => {
     // Navigate to the main app (Explore tab)
-    router.replace('/(tabs)/explore');
+    router.replace('/(tabs)/home');
   };
 
   const [showPassword, setShowPassword] = useState(false);
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: CHARCOAL,
     fontFamily: 'Inter_500Medium',
-    outlineStyle: 'none', // Remove default web outline
+    
   },
   rowBetween: {
     flexDirection: 'row',

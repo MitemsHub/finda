@@ -83,7 +83,9 @@ export default function VerifyCode() {
               {code.map((digit, index) => (
                 <TextInput
                   key={index}
-                  ref={(ref) => (inputRefs.current[index] = ref)}
+                  ref={(ref) => {
+                    inputRefs.current[index] = ref;
+                  }}
                   style={[styles.codeInput, digit ? styles.codeInputFilled : null]}
                   keyboardType="number-pad"
                   maxLength={1}
@@ -203,7 +205,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     color: CHARCOAL,
     // Web specific
-    outlineStyle: 'none',
+    
   },
   codeInputFilled: {
     borderColor: TEAL,

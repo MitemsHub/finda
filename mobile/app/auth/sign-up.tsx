@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: CHARCOAL,
     fontFamily: 'Inter_500Medium',
-    outlineStyle: 'none', // Remove default web outline
+    
   },
   checkboxRow: {
     flexDirection: 'row',

@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: CHARCOAL,
     fontFamily: 'Inter_500Medium',
-    outlineStyle: 'none',
+    
   },
   submitButton: {
     backgroundColor: TEAL,

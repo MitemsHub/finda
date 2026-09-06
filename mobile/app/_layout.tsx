@@ -1,5 +1,5 @@
 import 'react-native-reanimated';
-import { Slot, SplashScreen } from 'expo-router';
+import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { 
   useFonts,
@@ -21,6 +21,7 @@ import {
   PlayfairDisplay_900Black,
 } from '@expo-google-fonts/playfair-display';
 import { useEffect } from 'react';
+import { initSaved } from '../lib/saved';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -69,7 +70,7 @@ const WebHomeIndicator = () => (
 const MobileFrame = ({ children }: { children: React.ReactNode }) => {
   if (Platform.OS === 'web') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f0f0f0', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <View style={{ flex: 1, backgroundColor: '#f0f0f0', alignItems: 'center', justifyContent: 'center', minHeight: '100%' }}>
         <View style={{
           width: 375, // Standard mobile width
           height: 812, // Standard mobile height
@@ -116,6 +117,10 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    initSaved();
+  }, []);
+
+  useEffect(() => {
     if (error) throw error;
     if (playfairError) throw playfairError;
   }, [error, playfairError]);
@@ -133,7 +138,9 @@ export default function RootLayout() {
   return (
     <MobileFrame>
       <StatusBar style="dark" />
-      <Slot />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="business/[slug]" />
+      </Stack>
     </MobileFrame>
   );
 }
