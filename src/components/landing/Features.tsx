@@ -1,71 +1,76 @@
-import { FaBolt, FaMapLocationDot, FaCheck, FaCalendarCheck, FaMessage, FaFilter, FaBookmark } from 'react-icons/fa6';
+import { FaLocationDot, FaCircleCheck, FaCalendarCheck, FaStar, FaSliders, FaBookmark } from 'react-icons/fa6';
+import Reveal from '@/components/Reveal';
+
+const FEATURES = [
+  {
+    icon: FaLocationDot,
+    title: 'Map-first discovery',
+    desc: 'Browse a live map of your area with verified pins, or filter a curated list by what matters — category, distance, rating, open now.',
+    tint: 'bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright',
+  },
+  {
+    icon: FaCircleCheck,
+    title: 'Every listing verified',
+    desc: 'Our team checks licenses, hours, and locations before a business goes live. The badge means someone actually looked.',
+    tint: 'bg-accent-soft dark:bg-accent/15 text-accent dark:text-accent-bright',
+  },
+  {
+    icon: FaCalendarCheck,
+    title: 'Book in two taps',
+    desc: 'Real availability, instant confirmation, and reminders — reservations, appointments, and classes without the phone tag.',
+    tint: 'bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright',
+  },
+  {
+    icon: FaStar,
+    title: 'Reviews from real visits',
+    desc: 'Reviews are tied to bookings and visits, not bots and grudges. See the good and the honest bad, side by side.',
+    tint: 'bg-gold-soft dark:bg-gold/15 text-gold dark:text-gold-bright',
+  },
+  {
+    icon: FaSliders,
+    title: 'Smart filters',
+    desc: 'Open now, price level, neighborhood, accessibility, and tags. Find the exact fit in seconds, not screens.',
+    tint: 'bg-accent-soft dark:bg-accent/15 text-accent dark:text-accent-bright',
+  },
+  {
+    icon: FaBookmark,
+    title: 'Saved lists',
+    desc: 'Keep favorite spots handy and get notified when they run offers or open up last-minute slots.',
+    tint: 'bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright',
+  },
+];
 
 export default function Features() {
-  const features = [
-    {
-      icon: <FaMapLocationDot className="text-teal text-2xl" />,
-      bg: "bg-teal/10",
-      title: "Map-First Discovery",
-      desc: "Interactive map view with custom pins showing verified businesses in your area with real-time updates.",
-      delay: "delay-1"
-    },
-    {
-      icon: <FaCheck className="text-indigo text-2xl" />,
-      bg: "bg-indigo/10",
-      title: "Verified Businesses",
-      desc: "Only trusted, verified businesses with premium badges ensuring quality and reliability.",
-      delay: "delay-2"
-    },
-    {
-      icon: <FaCalendarCheck className="text-teal text-2xl" />,
-      bg: "bg-teal/10",
-      title: "Instant Booking",
-      desc: "Book appointments, reserve tables, or schedule services directly within the app in seconds.",
-      delay: "delay-3"
-    },
-    {
-      icon: <FaMessage className="text-indigo text-2xl" />,
-      bg: "bg-indigo/10",
-      title: "In-App Messaging",
-      desc: "Chat directly with businesses, ask questions, and get instant responses without leaving the app.",
-      delay: "delay-1"
-    },
-    {
-      icon: <FaFilter className="text-teal text-2xl" />,
-      bg: "bg-teal/10",
-      title: "Smart Filters",
-      desc: "Advanced filtering by category, distance, rating, and availability to find exactly what you need.",
-      delay: "delay-2"
-    },
-    {
-      icon: <FaBookmark className="text-indigo text-2xl" />,
-      bg: "bg-indigo/10",
-      title: "Save Favorites",
-      desc: "Bookmark your favorite businesses and access them quickly for future visits and bookings.",
-      delay: "delay-3"
-    }
-  ];
-
   return (
-    <section id="features" className="py-20 bg-white dark:bg-charcoal transition-colors duration-300">
+    <section id="features" className="py-24 bg-white dark:bg-surface-dark border-y border-line-light dark:border-line-dark">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16 fade-in-up">
-          <div className="inline-flex items-center gap-2 bg-teal/10 text-teal px-4 py-2 rounded-full mb-4">
-            <FaBolt className="text-sm" />
-            <span className="text-sm font-semibold">Powerful Features</span>
+        <Reveal>
+          <div className="max-w-2xl mb-14">
+            <p className="eyebrow mb-4">Why Finda</p>
+            <h2 className="text-display-lg font-bold text-ink-900 dark:text-ink-900-inv mb-4">
+              Built on trust, not on ad slots
+            </h2>
+            <p className="text-lg text-muted leading-relaxed">
+              Most directories rank whoever pays. We rank on verification,
+              proximity, and reviews from real visits — so the best local
+              business actually surfaces first.
+            </p>
           </div>
-          <h2 className="text-4xl lg:text-5xl font-black text-charcoal dark:text-white mb-4">Everything You Need in One App</h2>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Discover, connect, and transact with local businesses effortlessly</p>
-        </div>
+        </Reveal>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <div key={index} className={`glass-effect rounded-2xl p-8 border border-white/40 dark:border-white/10 hover:border-teal/40 transition fade-in-up ${feature.delay}`}>
-              <div className={`w-14 h-14 rounded-xl ${feature.bg} flex items-center justify-center mb-6`}>
-                {feature.icon}
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} delay={(i % 3) * 90}>
+              <div className="card card-hover p-7 h-full">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 ${f.tint}`}>
+                  <f.icon className="text-xl" aria-hidden />
+                </div>
+                <h3 className="text-lg font-semibold text-ink-900 dark:text-ink-900-inv mb-2 font-display">
+                  {f.title}
+                </h3>
+                <p className="text-[15px] text-muted leading-relaxed">{f.desc}</p>
               </div>
-              <h3 className="text-xl font-bold text-charcoal dark:text-white mb-3">{feature.title}</h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{feature.desc}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

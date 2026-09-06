@@ -1,5 +1,6 @@
 import Header from '@/components/landing/Header';
 import Hero from '@/components/landing/Hero';
+import FeaturedStrip from '@/components/landing/FeaturedStrip';
 import Features from '@/components/landing/Features';
 import HowItWorks from '@/components/landing/HowItWorks';
 import BusinessSection from '@/components/landing/BusinessSection';
@@ -9,9 +10,10 @@ import Footer from '@/components/landing/Footer';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
+    <main className="min-h-screen bg-paper-light dark:bg-paper-dark transition-colors duration-300">
       <Header />
       <Hero />
+      <FeaturedStrip />
       <Features />
       <HowItWorks />
       <BusinessSection />

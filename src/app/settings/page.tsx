@@ -1,81 +1,216 @@
 "use client";
 
-import Header from '@/components/landing/Header';
-import { FaUser, FaLock, FaBell, FaCreditCard, FaTrash } from 'react-icons/fa6';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FaUser, FaLock, FaBell, FaTrash, FaCircleCheck } from 'react-icons/fa6';
+import { PageShell, PageTitle } from '@/components/PageShell';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { useSession } from '@/lib/session/SessionProvider';
+import * as store from '@/lib/data/demo';
+
+type Tab = 'profile' | 'security' | 'notifications';
 
 export default function SettingsPage() {
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
-      <Header />
-      
-      <main className="pt-28 pb-20 px-6 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-black text-charcoal dark:text-white mb-2">Account Settings</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-10">Manage your profile and preferences</p>
+    <AuthGuard>
+      <SettingsContent />
+    </AuthGuard>
+  );
+}
 
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar Nav */}
-          <div className="lg:col-span-1 space-y-2">
-            <button type="button" className="w-full text-left px-4 py-3 rounded-xl bg-teal/10 text-teal font-bold flex items-center gap-3">
-              <FaUser /> Profile
-            </button>
-            <button type="button" className="w-full text-left px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 font-medium flex items-center gap-3 transition">
-              <FaLock /> Security
-            </button>
-            <button type="button" className="w-full text-left px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 font-medium flex items-center gap-3 transition">
-              <FaBell /> Notifications
-            </button>
-            <button type="button" className="w-full text-left px-4 py-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 font-medium flex items-center gap-3 transition">
-              <FaCreditCard /> Billing
-            </button>
-          </div>
+function SettingsContent() {
+  const [tab, setTab] = useState<Tab>('profile');
+  const [saved, setSaved] = useState(false);
+  const router = useRouter();
+  const { user, refresh, signOut } = useSession();
 
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-8">
-            {/* Profile Section */}
-            <div className="bg-white dark:bg-white/5 rounded-2xl p-8 border border-gray-100 dark:border-white/10">
-              <h2 className="text-xl font-bold text-charcoal dark:text-white mb-6">Personal Information</h2>
-              <div className="flex items-center gap-6 mb-8">
-                <div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700"></div>
-                <div>
-                  <button type="button" className="px-4 py-2 bg-indigo text-white font-bold rounded-lg text-sm hover:bg-indigo/90 transition mb-2">Upload New Picture</button>
-                  <p className="text-xs text-gray-500">JPG, GIF or PNG. Max size of 800K</p>
+  const profile = {
+    firstName: user?.firstName ?? store.currentUser.firstName,
+    lastName: user?.lastName ?? store.currentUser.lastName,
+    email: user?.email ?? store.currentUser.email,
+    memberSince: store.currentUser.memberSince,
+  };
+
+  const saveProfile = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    store.updateSessionProfile({
+      firstName: String(form.get('firstName') ?? '').trim() || profile.firstName,
+      lastName: String(form.get('lastName') ?? '').trim() || profile.lastName,
+    });
+    refresh();
+    // Demo mode: with Supabase this calls updateProfile(formData).
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  return (
+    <PageShell>
+      <PageTitle
+        title="Account settings"
+        subtitle="Manage your profile, security, and notification preferences."
+      />
+
+      <div className="grid lg:grid-cols-[220px_1fr] gap-8">
+        {/* Tabs */}
+        <div className="flex lg:flex-col gap-2 overflow-x-auto scrollbar-hide">
+          {([
+            { key: 'profile', label: 'Profile', icon: FaUser },
+            { key: 'security', label: 'Security', icon: FaLock },
+            { key: 'notifications', label: 'Notifications', icon: FaBell },
+          ] as const).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              aria-pressed={tab === t.key}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm whitespace-nowrap transition ${
+                tab === t.key
+                  ? 'bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright'
+                  : 'text-ink-700 dark:text-ink-700-inv hover:bg-sunken-light dark:hover:bg-white/5'
+              }`}
+            >
+              <t.icon aria-hidden /> {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Panels */}
+        <div className="min-w-0">
+          {tab === 'profile' && (
+            <form onSubmit={saveProfile} className="card p-8 space-y-6">
+              <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv">Personal information</h2>
+
+              <div className="flex items-center gap-5">
+                <span className="w-20 h-20 rounded-full bg-primary text-white font-display text-2xl font-bold flex items-center justify-center">
+                  {profile.firstName[0]}{profile.lastName[0]}
+                </span>
+                <div className="text-sm">
+                  <p className="font-semibold text-ink-900 dark:text-ink-900-inv">{profile.firstName} {profile.lastName}</p>
+                  <p className="text-muted">Member since {profile.memberSince}</p>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div className="grid sm:grid-cols-2 gap-5">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-bold text-charcoal dark:text-white mb-2">First Name</label>
-                  <input id="firstName" type="text" defaultValue="John" className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl" />
+                  <label htmlFor="firstName" className="field-label">First name</label>
+                  <input id="firstName" name="firstName" type="text" defaultValue={profile.firstName} className="field" />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Last Name</label>
-                  <input id="lastName" type="text" defaultValue="Doe" className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl" />
+                  <label htmlFor="lastName" className="field-label">Last name</label>
+                  <input id="lastName" type="text" defaultValue={profile.lastName} className="field" />
                 </div>
+              </div>                <div>
+                  <label htmlFor="email" className="field-label">Email address</label>
+                  <input id="email" type="email" defaultValue={profile.email} disabled className="field opacity-60 cursor-not-allowed" />
+                </div>
+
+              <div className="flex items-center justify-end gap-3">
+                {saved && (
+                  <span className="text-sm font-semibold text-success flex items-center gap-1.5" role="status">
+                    <FaCircleCheck aria-hidden /> Saved
+                  </span>
+                )}
+                <button type="submit" className="btn-primary">Save changes</button>
+              </div>
+            </form>
+          )}
+
+          {tab === 'security' && (
+            <div className="space-y-6">
+              <div className="card p-8">
+                <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-2">Change password</h2>
+                <p className="text-sm text-muted mb-6">
+                  Use at least 8 characters with a mix of letters, numbers, and symbols.
+                </p>
+                <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                  <div>
+                    <label htmlFor="current" className="field-label">Current password</label>
+                    <input id="current" type="password" autoComplete="current-password" className="field" />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <label htmlFor="new" className="field-label">New password</label>
+                      <input id="new" type="password" autoComplete="new-password" className="field" />
+                    </div>
+                    <div>
+                      <label htmlFor="confirm" className="field-label">Confirm new password</label>
+                      <input id="confirm" type="password" autoComplete="new-password" className="field" />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button type="submit" className="btn-primary">Update password</button>
+                  </div>
+                </form>
               </div>
 
-              <div className="mb-6">
-                <label htmlFor="email" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Email Address</label>
-                <input id="email" type="email" defaultValue="john.doe@example.com" className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl" />
-              </div>
-
-              <div className="flex justify-end">
-                <button type="submit" className="px-6 py-3 bg-teal text-white font-bold rounded-xl hover:bg-teal/90 transition shadow-lg">
-                  Save Changes
-                </button>
+              <div className="card p-8">
+                <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-2">Sign-in security</h2>
+                <ul className="space-y-4 text-sm">
+                  <li className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-semibold text-ink-900 dark:text-ink-900-inv">Two-factor authentication</div>
+                      <div className="text-muted">Add an extra layer of protection at sign-in</div>
+                    </div>
+                    <button className="btn-secondary btn-sm shrink-0">Enable</button>
+                  </li>
+                  <li className="flex items-center justify-between gap-4 pt-4 border-t border-line-light dark:border-line-dark">
+                    <div>
+                      <div className="font-semibold text-ink-900 dark:text-ink-900-inv">Active sessions</div>
+                      <div className="text-muted">1 device · this browser, today</div>
+                    </div>
+                    <button className="btn-secondary btn-sm shrink-0">Sign out others</button>
+                  </li>
+                </ul>
               </div>
             </div>
+          )}
 
-            {/* Danger Zone */}
-            <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-8 border border-red-100 dark:border-red-900/20">
-              <h2 className="text-xl font-bold text-red-600 mb-4">Danger Zone</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">Once you delete your account, there is no going back. Please be certain.</p>
-              <button type="button" className="px-6 py-3 bg-white dark:bg-transparent border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center gap-2">
-                <FaTrash /> Delete Account
+          {tab === 'notifications' && (
+            <div className="card p-8">
+              <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-6">Email preferences</h2>
+              <div className="space-y-5">
+                {[
+                  { label: 'Booking updates', desc: 'Confirmations, reminders, and changes', on: true },
+                  { label: 'Replies to my reviews', desc: 'When a business responds publicly', on: true },
+                  { label: 'Offers from saved spots', desc: 'Occasional deals from businesses you favorited', on: false },
+                  { label: 'Finda news', desc: 'New features and neighborhood highlights', on: false },
+                ].map((pref) => (
+                  <label key={pref.label} className="flex items-center justify-between gap-4 cursor-pointer select-none">
+                    <div>
+                      <div className="font-semibold text-ink-900 dark:text-ink-900-inv text-[15px]">{pref.label}</div>
+                      <div className="text-sm text-muted">{pref.desc}</div>
+                    </div>
+                    <input type="checkbox" defaultChecked={pref.on} className="w-9 h-5 appearance-none rounded-full bg-sunken-light dark:bg-white/10 checked:bg-primary transition-colors relative cursor-pointer before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-transform checked:before:translate-x-4" />
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Danger zone */}
+          <div className="mt-8 card p-8 border-danger/25 dark:border-danger/25">
+            <h2 className="font-display text-xl font-semibold text-danger mb-2">Danger zone</h2>
+            <p className="text-sm text-muted mb-5">
+              Deleting your account removes your bookings, reviews, and saved
+              places. This cannot be undone.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => {
+                  signOut();
+                  router.push('/');
+                }}
+                className="btn-secondary"
+              >
+                Sign out of finda
+              </button>
+              <button className="px-5 py-2.5 rounded-xl text-sm font-semibold text-danger border border-danger/40 hover:bg-danger-soft dark:hover:bg-danger/10 transition inline-flex items-center gap-2">
+                <FaTrash aria-hidden /> Delete account
               </button>
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </PageShell>
   );
 }

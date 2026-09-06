@@ -1,55 +1,147 @@
 "use client";
 
-import Header from '@/components/landing/Header';
-import { FaCheck, FaXmark, FaStore } from 'react-icons/fa6';
+import {
+  FaCheck, FaXmark, FaStore, FaEnvelope, FaPhone, FaLocationDot,
+  FaBoxOpen, FaBellConcierge,
+} from 'react-icons/fa6';
+import { AdminShell } from '@/components/admin/AdminShell';
+import * as store from '@/lib/data/demo';
+import { useStoreVersion } from '@/lib/hooks/useStore';
 
 export default function AdminApprovals() {
-  const pendingBusinesses = [
-    { id: 1, name: "The Gourmet Kitchen", category: "Restaurant", owner: "James Oliver", date: "2024-10-24", description: "Authentic Italian cuisine in the heart of downtown." },
-    { id: 2, name: "Zen Yoga Studio", category: "Health", owner: "Sarah Lee", date: "2024-10-23", description: "Peaceful yoga studio offering classes for all levels." },
-    { id: 3, name: "Tech Solutions Inc", category: "Services", owner: "Mike Ross", date: "2024-10-22", description: "Professional IT support and computer repair services." },
-    { id: 4, name: "Bloom Florist", category: "Retail", owner: "Emma Watson", date: "2024-10-21", description: "Fresh flowers for every occasion." },
-    { id: 5, name: "City Gym", category: "Health", owner: "Dwayne Johnson", date: "2024-10-20", description: "24/7 fitness center with modern equipment." },
-  ];
+  useStoreVersion();
+  const pending = store.getPendingBusinesses();
 
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
-      <Header />
-      
-      <main className="pt-28 pb-20 px-6 max-w-6xl mx-auto">
-        <h1 className="text-3xl font-black text-charcoal dark:text-white mb-2">Pending Approvals</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-10">Review and approve new business listings</p>
+    <AdminShell
+      title="Business approvals"
+      subtitle="Review submitted listings before they go live. Verification protects the Finda badge."
+      active="/admin/approvals"
+    >
+      {pending.length === 0 ? (
+        <div className="card p-16 text-center">
+          <span className="w-16 h-16 rounded-2xl bg-success-soft dark:bg-success/15 text-success flex items-center justify-center mx-auto mb-5">
+            <FaCheck className="text-2xl" aria-hidden />
+          </span>
+          <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-2">
+            Approval queue is clear
+          </h2>
+          <p className="text-muted max-w-sm mx-auto">
+            New business submissions from the “List your business” flow will
+            appear here for review.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {pending.map((b) => (
+            <article key={b.id} className="card p-6">
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv">{b.name}</h2>
+                      <p className="text-sm text-muted mt-0.5">
+                        {b.category} · submitted {new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                    <span className="badge-accent shrink-0">Pending review</span>
+                  </div>
 
-        <div className="grid gap-6">
-          {pendingBusinesses.map((business) => (
-            <div key={business.id} className="bg-white dark:bg-white/5 p-6 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm flex flex-col md:flex-row gap-6 items-start md:items-center">
-              <div className="w-16 h-16 rounded-xl bg-indigo/10 flex items-center justify-center flex-shrink-0">
-                <FaStore className="text-indigo text-2xl" />
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
-                  <h3 className="text-xl font-bold text-charcoal dark:text-white">{business.name}</h3>
-                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 w-fit">
-                    {business.category}
-                  </span>
+                  {b.description && (
+                    <p className="text-[15px] text-ink-700 dark:text-ink-700-inv leading-relaxed mb-4">
+                      {b.description}
+                    </p>
+                  )}
+
+                  <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                    <span className="flex items-center gap-2 text-ink-700 dark:text-ink-700-inv">
+                      <FaEnvelope className="text-ink-400 shrink-0" aria-hidden /> {b.email}
+                    </span>
+                    <span className="flex items-center gap-2 text-ink-700 dark:text-ink-700-inv">
+                      <FaPhone className="text-ink-400 shrink-0" aria-hidden /> {b.phone}
+                    </span>
+                    <span className="flex items-center gap-2 text-ink-700 dark:text-ink-700-inv">
+                      <FaLocationDot className="text-ink-400 shrink-0" aria-hidden /> {b.address}, {b.neighborhood}
+                    </span>
+                  </div>
+
+                  {b.services.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-line-light dark:border-line-dark">
+                      <div className="text-xs font-bold uppercase tracking-[0.08em] text-ink-400 dark:text-ink-400-inv mb-2 flex items-center gap-1.5">
+                        <FaBellConcierge aria-hidden /> Submitted services ({b.services.length})
+                      </div>
+                      <ul className="flex flex-wrap gap-2">
+                        {b.services.map((s) => (
+                          <li key={s.name} className="px-3 py-1.5 rounded-lg bg-sunken-light dark:bg-white/5 text-sm">
+                            <span className="font-semibold text-ink-900 dark:text-ink-900-inv">{s.name}</span>
+                            {s.price && <span className="text-muted"> · {s.price}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const submitted = store.getProductsForBusiness(b.id);
+                    if (submitted.length === 0) return null;
+                    return (
+                      <div className="mt-3">
+                        <div className="text-xs font-bold uppercase tracking-[0.08em] text-ink-400 dark:text-ink-400-inv mb-2 flex items-center gap-1.5">
+                          <FaBoxOpen aria-hidden /> Storefront products ({submitted.length})
+                        </div>
+                        <ul className="flex flex-wrap gap-2">
+                          {submitted.map((p) => (
+                            <li key={p.id} className="px-3 py-1.5 rounded-lg bg-sunken-light dark:bg-white/5 text-sm">
+                              <span className="font-semibold text-ink-900 dark:text-ink-900-inv">{p.name}</span>
+                              {p.price && <span className="text-muted"> · {p.price}</span>}
+                              {p.stock !== null && <span className="text-ink-400"> · {p.stock} in stock</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()}
                 </div>
-                <div className="text-sm text-gray-500 mb-2">Owned by {business.owner} • Submitted {business.date}</div>
-                <p className="text-gray-600 dark:text-gray-300">{business.description}</p>
-              </div>
 
-              <div className="flex gap-3 w-full md:w-auto">
-                <button className="flex-1 md:flex-none px-6 py-3 bg-green-100 text-green-700 font-bold rounded-xl hover:bg-green-200 transition flex items-center justify-center gap-2">
-                  <FaCheck /> Approve
-                </button>
-                <button className="flex-1 md:flex-none px-6 py-3 bg-red-100 text-red-700 font-bold rounded-xl hover:bg-red-200 transition flex items-center justify-center gap-2">
-                  <FaXmark /> Reject
-                </button>
+                <div className="flex lg:flex-col gap-3 lg:w-40 shrink-0">
+                  <button
+                    onClick={() => store.approveBusiness(b.id)}
+                    className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 bg-success text-white font-semibold rounded-xl hover:brightness-110 transition"
+                  >
+                    <FaCheck aria-hidden /> Approve
+                  </button>
+                  <button
+                    onClick={() => store.rejectBusiness(b.id)}
+                    className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 text-danger font-semibold rounded-xl border border-danger/40 hover:bg-danger-soft dark:hover:bg-danger/10 transition"
+                  >
+                    <FaXmark aria-hidden /> Reject
+                  </button>
+                </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
-      </main>
-    </div>
+      )}
+
+      {/* Verification checklist */}
+      <div className="mt-8 card p-6">
+        <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv mb-4 flex items-center gap-2">
+          <FaStore className="text-primary dark:text-primary-bright" aria-hidden /> Verification checklist
+        </h3>
+        <ul className="grid sm:grid-cols-2 gap-3 text-sm text-ink-700 dark:text-ink-700-inv">
+          {[
+            'Business license matches the registered name',
+            'Address is real and the category is accurate',
+            'Phone and email reach the owner',
+            'No policy violations or duplicate listings',
+          ].map((item) => (
+            <li key={item} className="flex items-start gap-2.5">
+              <FaCheck className="text-success mt-0.5 shrink-0 text-xs" aria-hidden />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </AdminShell>
   );
 }

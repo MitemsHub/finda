@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <!-- stylized neighborhood map background -->
+  <rect width="400" height="300" fill="#EFEBE2"/>
+  <!-- park -->
+  <rect x="240" y="180" width="120" height="90" rx="12" fill="#D9E5D3"/>
+  <rect x="30" y="40" width="70" height="55" rx="8" fill="#D9E5D3"/>
+  <!-- water -->
+  <path d="M0 250 Q 80 235 160 252 T 400 245 L 400 300 L 0 300 Z" fill="#CFDDE4"/>
+  <!-- road grid -->
+  <g stroke="#FFFFFF" stroke-width="10" stroke-linecap="round">
+    <line x1="0" y1="60" x2="400" y2="60"/>
+    <line x1="0" y1="130" x2="400" y2="130"/>
+    <line x1="0" y1="200" x2="270" y2="200"/>
+    <line x1="80" y1="0" x2="80" y2="250"/>
+    <line x1="180" y1="0" x2="180" y2="250"/>
+    <line x1="280" y1="0" x2="280" y2="185"/>
+  </g>
+  <g stroke="#F7F5F0" stroke-width="4" stroke-linecap="round">
+    <line x1="130" y1="0" x2="130" y2="250"/>
+    <line x1="230" y1="0" x2="230" y2="250"/>
+    <line x1="330" y1="0" x2="330" y2="180"/>
+    <line x1="0" y1="95" x2="400" y2="95"/>
+    <line x1="0" y1="165" x2="400" y2="165"/>
+  </g>
+  <!-- blocks -->
+  <g fill="#E5E0D4">
+    <rect x="90" y="70" width="32" height="20" rx="3"/>
+    <rect x="190" y="70" width="30" height="22" rx="3"/>
+    <rect x="290" y="70" width="40" height="18" rx="3"/>
+    <rect x="90" y="140" width="34" height="18" rx="3"/>
+    <rect x="190" y="140" width="30" height="16" rx="3"/>
+    <rect x="290" y="140" width="38" height="20" rx="3"/>
+    <rect x="40" y="140" width="30" height="18" rx="3"/>
+    <rect x="140" y="210" width="34" height="20" rx="3"/>
+  </g>
+</svg>

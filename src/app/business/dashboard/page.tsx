@@ -1,508 +1,816 @@
 "use client";
 
 import { useState } from 'react';
-import Header from '@/components/landing/Header';
-import Footer from '@/components/landing/Footer';
 import Image from 'next/image';
-import { 
-  FaChartPie, FaCalendarDays, FaUserGroup, FaStore, FaGear, FaBell, FaArrowUp, 
-  FaStar, FaPen, FaPlus, FaBullhorn, FaImages, FaTrash, FaEnvelope, FaPhone, 
-  FaMapPin, FaReply 
+import Link from 'next/link';
+import {
+  FaChartPie, FaCalendarDays, FaUserGroup, FaStar, FaGear, FaImages,
+  FaCircleCheck, FaXmark, FaEnvelope, FaPhone, FaLocationDot, FaReply,
+  FaPlus, FaStore, FaArrowUp, FaBoxOpen, FaClockRotateLeft, FaHourglassHalf,
+  FaBagShopping, FaTruckFast, FaBullhorn, FaUsers, FaTrash,
 } from 'react-icons/fa6';
+import { PageShell, PageTitle } from '@/components/PageShell';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { useSession } from '@/lib/session/SessionProvider';
+import * as store from '@/lib/data/demo';
+import * as social from '@/lib/data/social';
+import { useStoreVersion } from '@/lib/hooks/useStore';
+
+type Tab = 'overview' | 'bookings' | 'orders' | 'products' | 'updates' | 'customers' | 'reviews' | 'gallery' | 'settings';
+
+const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
+  { key: 'overview', label: 'Overview', icon: FaChartPie },
+  { key: 'bookings', label: 'Bookings', icon: FaCalendarDays },
+  { key: 'orders', label: 'Orders', icon: FaBagShopping },
+  { key: 'products', label: 'Products', icon: FaBoxOpen },
+  { key: 'updates', label: 'Updates', icon: FaBullhorn },
+  { key: 'customers', label: 'Customers', icon: FaUserGroup },
+  { key: 'reviews', label: 'Reviews', icon: FaStar },
+  { key: 'gallery', label: 'Gallery', icon: FaImages },
+  { key: 'settings', label: 'Settings', icon: FaGear },
+];
 
 export default function BusinessDashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showBookingModal, setShowBookingModal] = useState(false);
+  return (
+    <AuthGuard role="business">
+      <BusinessDashboardContent />
+    </AuthGuard>
+  );
+}
 
+function BusinessDashboardContent() {
+  useStoreVersion();
+  const { user } = useSession();
+  const [tab, setTab] = useState<Tab>('overview');
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+
+  // The signed-in owner's business; falls back to the demo business.
+  const business =
+    (user?.ownedBusinessId && store.getBusinessById(user.ownedBusinessId)) ||
+    store.getBusinessById('b_1')!;
+  const allBookings = store.getBookings().filter((b) => b.businessId === business.id);
+  const reviews = store.getReviewsForBusiness(business.id);
+  const products = store.getProductsForBusiness(business.id);
+  const orders = store.getOrdersForBusiness(business.id);
+  const activeOrders = orders.filter((o) => o.status === 'pending' || o.status === 'confirmed' || o.status === 'ready');
+  const orderRevenue = orders
+    .filter((o) => o.status !== 'cancelled')
+    .reduce((sum, o) => sum + o.total, 0);
+  const isPending = business.status === 'pending';
+  const followers = social.getFollowerCount(business.id);
+
+  // Business-side demo metrics
   const stats = [
-    { label: "Total Views", value: "2.4k", change: "+12%", icon: <FaUserGroup /> },
-    { label: "Bookings", value: "148", change: "+8%", icon: <FaCalendarDays /> },
-    { label: "Avg. Rating", value: "4.9", change: "+0.1", icon: <FaStar /> },
-    { label: "Revenue", value: "$12.5k", change: "+15%", icon: <FaChartPie /> },
-  ];
-
-  const recentBookings = [
-    { customer: "Sarah Johnson", service: "Dinner for 2", date: "Today, 7:00 PM", status: "Confirmed", amount: "$85" },
-    { customer: "Mike Chen", service: "Private Event", date: "Tomorrow, 6:00 PM", status: "Pending", amount: "$450" },
-    { customer: "Emily Davis", service: "Lunch Special", date: "Oct 24, 12:30 PM", status: "Completed", amount: "$45" },
-    { customer: "David Wilson", service: "Dinner Reservation", date: "Oct 23, 8:00 PM", status: "Cancelled", amount: "$0" },
-    { customer: "Jessica Taylor", service: "Catering", date: "Oct 28, 2:00 PM", status: "Confirmed", amount: "$1,200" },
+    { label: 'Profile views', value: '2,847', delta: '+12%' },
+    { label: 'Total bookings', value: '142', delta: '+8%' },
+    { label: 'Avg. rating', value: business.rating.toFixed(1), delta: '+0.1' },
+    { label: 'Revenue (est.)', value: '₦4.2m', delta: '+15%' },
   ];
 
   const customers = [
-    { id: 1, name: "Sarah Johnson", email: "sarah.j@example.com", phone: "+1 234 567 8900", totalVisits: 12, totalSpend: "$1,240", lastVisit: "Oct 24, 2023" },
-    { id: 2, name: "Mike Chen", email: "mike.c@example.com", phone: "+1 234 567 8901", totalVisits: 5, totalSpend: "$450", lastVisit: "Oct 22, 2023" },
-    { id: 3, name: "Emily Davis", email: "emily.d@example.com", phone: "+1 234 567 8902", totalVisits: 8, totalSpend: "$890", lastVisit: "Oct 15, 2023" },
-    { id: 4, name: "David Wilson", email: "david.w@example.com", phone: "+1 234 567 8903", totalVisits: 3, totalSpend: "$210", lastVisit: "Oct 10, 2023" },
-    { id: 5, name: "Jessica Taylor", email: "jess.t@example.com", phone: "+1 234 567 8904", totalVisits: 1, totalSpend: "$1,200", lastVisit: "Oct 28, 2023" },
+    { name: 'Chiamaka Obi', email: 'chiamaka@example.com', visits: 12, spend: '₦340,000', last: 'Today' },
+    { name: 'Tunde Bakare', email: 'tunde@example.com', visits: 5, spend: '₦125,000', last: 'Last week' },
+    { name: 'Halima Bello', email: 'halima@example.com', visits: 8, spend: '₦245,000', last: '2 weeks ago' },
+    { name: 'Emeka Duru', email: 'emeka@example.com', visits: 3, spend: '₦58,000', last: 'Last month' },
   ];
 
-  const reviews = [
-    { id: 1, user: "Alice Brown", rating: 5, date: "2 days ago", content: "Amazing food and great atmosphere! The staff was very attentive.", reply: "" },
-    { id: 2, user: "John Smith", rating: 4, date: "1 week ago", content: "Good food but the service was a bit slow during peak hours.", reply: "Thank you for your feedback, John. We're working on improving our service speed." },
-    { id: 3, user: "Karen White", rating: 5, date: "2 weeks ago", content: "Best pasta in town! Highly recommended.", reply: "" },
-    { id: 4, user: "Tom Harris", rating: 3, date: "3 weeks ago", content: "It was okay, but a bit overpriced for the portion sizes.", reply: "" },
-  ];
+  const galleryImages = [business.image, ...business.gallery];
 
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
-      <Header />
-      
-      <main className="pt-28 pb-20 px-6 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-5 gap-8">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-gray-100 dark:border-white/10 sticky top-28">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-lg bg-indigo text-white flex items-center justify-center font-bold text-lg">
-                  <FaStore />
-                </div>
-                <div>
-                  <div className="font-bold text-charcoal dark:text-white text-sm">The Rustic Spoon</div>
-                  <div className="text-xs text-green-500 font-bold">● Open Now</div>
-                </div>
-              </div>
-              
-              <nav className="space-y-2">
-                <button 
-                  onClick={() => setActiveTab('overview')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition ${activeTab === 'overview' ? 'bg-indigo/10 text-indigo' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                >
-                  <FaChartPie /> Overview
-                </button>
-                <button 
-                  onClick={() => setActiveTab('bookings')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition ${activeTab === 'bookings' ? 'bg-indigo/10 text-indigo' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                >
-                  <FaCalendarDays /> Bookings
-                </button>
-                <button 
-                  onClick={() => setActiveTab('customers')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition ${activeTab === 'customers' ? 'bg-indigo/10 text-indigo' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                >
-                  <FaUserGroup /> Customers
-                </button>
-                <button 
-                  onClick={() => setActiveTab('reviews')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition ${activeTab === 'reviews' ? 'bg-indigo/10 text-indigo' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                >
-                  <FaStar /> Reviews
-                </button>
-                <button 
-                  onClick={() => setActiveTab('gallery')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition ${activeTab === 'gallery' ? 'bg-indigo/10 text-indigo' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                >
-                  <FaImages /> Gallery
-                </button>
-                <button 
-                  onClick={() => setActiveTab('settings')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition ${activeTab === 'settings' ? 'bg-indigo/10 text-indigo' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                >
-                  <FaGear /> Settings
-                </button>
-              </nav>
-
-              <div className="mt-8 pt-8 border-t border-gray-100 dark:border-white/10">
-                <div className="bg-gradient-to-br from-indigo to-purple-600 rounded-xl p-4 text-white text-center">
-                   <div className="font-bold mb-1">Go Premium</div>
-                   <p className="text-xs opacity-80 mb-3">Unlock advanced analytics and more features.</p>
-                   <button className="w-full py-2 bg-white text-indigo text-xs font-bold rounded-lg hover:bg-indigo-50 transition">Upgrade</button>
+    <PageShell wide>
+      <div className="grid lg:grid-cols-[250px_1fr] gap-10">
+        {/* Sidebar */}
+        <aside>
+          <div className="card p-5 sticky top-28">
+            <div className="flex items-center gap-3 mb-7">
+              <span className="w-11 h-11 rounded-xl bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright font-display font-bold flex items-center justify-center text-lg">
+                {business.name[0]}
+              </span>
+              <div className="min-w-0">
+                <div className="font-semibold text-ink-900 dark:text-ink-900-inv text-sm truncate">{business.name}</div>
+                <div className="text-xs font-medium flex items-center gap-1.5 mt-0.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${business.isOpen ? 'bg-success' : 'bg-ink-300'}`} />
+                  <span className={business.isOpen ? 'text-success' : 'text-ink-400'}>
+                    {business.isOpen ? 'Open now' : 'Closed'}
+                  </span>
+                  {business.verified && (
+                    <span className="text-primary dark:text-primary-bright">· Verified</span>
+                  )}
                 </div>
               </div>
             </div>
+
+            <nav className="flex lg:flex-col gap-1.5 overflow-x-auto scrollbar-hide" aria-label="Business">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  aria-pressed={tab === t.key}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition ${
+                    tab === t.key
+                      ? 'bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright'
+                      : 'text-ink-700 dark:text-ink-700-inv hover:bg-sunken-light dark:hover:bg-white/5'
+                  }`}
+                >
+                  <t.icon aria-hidden /> {t.label}
+                </button>
+              ))}
+            </nav>
+
+            <Link href={`/business/${business.id}`} className="btn-secondary btn-sm w-full mt-6">
+              <FaStore aria-hidden /> View public page
+            </Link>
           </div>
+        </aside>
 
-          {/* Main Content */}
-          <div className="lg:col-span-4 space-y-8">
-            {activeTab === 'overview' && (
-              <>
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <h1 className="text-2xl font-black text-charcoal dark:text-white">Business Overview</h1>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">Track your performance and manage your business.</p>
-                  </div>
-                  <div className="flex gap-3">
-                     <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 transition">
-                       <FaBell /> <span className="hidden md:inline">Notifications</span>
-                     </button>
-                     <button 
-                       onClick={() => setShowBookingModal(true)}
-                       className="flex items-center gap-2 px-4 py-2 bg-indigo text-white rounded-xl text-sm font-bold hover:bg-indigo/90 transition shadow-lg shadow-indigo/20"
-                     >
-                       <FaPlus /> <span className="hidden md:inline">New Booking</span>
-                     </button>
-                  </div>
+        {/* Content */}
+        <div className="min-w-0">
+          <PageTitle
+            title="Business dashboard"
+            subtitle="Your customers, bookings, and reputation at a glance."
+          />
+
+          {isPending && (
+            <div className="mb-8 card p-5 border-accent/40 dark:border-accent/40 flex items-start gap-4">
+              <span className="w-10 h-10 rounded-xl bg-accent-soft dark:bg-accent/15 text-accent dark:text-accent-bright flex items-center justify-center shrink-0">
+                <FaHourglassHalf aria-hidden />
+              </span>
+              <div>
+                <div className="font-semibold text-ink-900 dark:text-ink-900-inv text-sm mb-0.5">
+                  Your listing is under review
                 </div>
+                <p className="text-sm text-muted">
+                  Finda verifies every business before it appears in search. You can
+                  keep setting up services, products, and photos meanwhile —
+                  everything goes live the moment you&apos;re approved.
+                </p>
+              </div>
+            </div>
+          )}
 
-                {/* Stats Grid */}
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {stats.map((stat, idx) => (
-                    <div key={idx} className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-5 hover:border-indigo/30 transition">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                          {stat.icon}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs font-bold text-green-500 bg-green-50 dark:bg-green-500/10 px-2 py-1 rounded-full">
-                          <FaArrowUp /> {stat.change}
-                        </div>
+          {tab === 'overview' && (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                {stats.map((s) => (
+                  <div key={s.label} className="card p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-display text-2xl font-bold text-ink-900 dark:text-ink-900-inv">{s.value}</span>
+                      <span className="text-[11px] font-bold text-success flex items-center gap-0.5">
+                        <FaArrowUp className="text-[9px]" aria-hidden /> {s.delta}
+                      </span>
+                    </div>
+                    <div className="text-xs font-semibold text-ink-400 dark:text-ink-400-inv">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Mini bar chart */}
+              <div className="card p-6 mb-8">
+                <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv mb-1">Bookings this week</h3>
+                <p className="text-xs text-muted mb-6">Confirmations vs. last week</p>
+                <div className="flex items-end gap-3 h-32">
+                  {[35, 55, 40, 70, 62, 88, 74].map((h, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                      <div className="w-full bg-primary-soft dark:bg-primary/20 rounded-t-lg relative overflow-hidden" style={{ height: '100%' }}>
+                        <div
+                          className="absolute bottom-0 w-full bg-primary dark:bg-primary-bright rounded-t-lg transition-all duration-700"
+                          style={{ height: `${h}%` }}
+                        />
                       </div>
-                      <div className="text-2xl font-black text-charcoal dark:text-white mb-1">{stat.value}</div>
-                      <div className="text-xs text-gray-500 font-medium">{stat.label}</div>
+                      <span className="text-[10px] font-semibold text-ink-400">{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</span>
                     </div>
                   ))}
                 </div>
-
-                <div className="grid lg:grid-cols-3 gap-8">
-                  {/* Recent Bookings */}
-                  <div className="lg:col-span-2 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-lg font-bold text-charcoal dark:text-white">Recent Bookings</h2>
-                      <button onClick={() => setActiveTab('bookings')} className="text-indigo font-semibold text-sm hover:underline">View All</button>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead>
-                          <tr className="text-gray-500 border-b border-gray-100 dark:border-white/10">
-                            <th className="pb-3 font-semibold">Customer</th>
-                            <th className="pb-3 font-semibold">Service</th>
-                            <th className="pb-3 font-semibold">Date</th>
-                            <th className="pb-3 font-semibold">Status</th>
-                            <th className="pb-3 font-semibold text-right">Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                          {recentBookings.slice(0, 3).map((booking, idx) => (
-                            <tr key={idx} className="group hover:bg-gray-50 dark:hover:bg-white/5 transition">
-                              <td className="py-4 font-bold text-charcoal dark:text-white">{booking.customer}</td>
-                              <td className="py-4 text-gray-600 dark:text-gray-300">{booking.service}</td>
-                              <td className="py-4 text-gray-500">{booking.date}</td>
-                              <td className="py-4">
-                                <span className={`inline-block px-2 py-1 rounded-md text-xs font-bold ${
-                                  booking.status === 'Confirmed' ? 'bg-green-100 text-green-600' :
-                                  booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-600' :
-                                  booking.status === 'Cancelled' ? 'bg-red-100 text-red-600' :
-                                  'bg-gray-100 text-gray-600'
-                                }`}>
-                                  {booking.status}
-                                </span>
-                              </td>
-                              <td className="py-4 text-right font-bold text-charcoal dark:text-white">{booking.amount}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="space-y-6">
-                    <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6">
-                      <h2 className="text-lg font-bold text-charcoal dark:text-white mb-4">Quick Actions</h2>
-                      <div className="space-y-3">
-                        <button className="w-full p-3 flex items-center gap-3 bg-gray-50 dark:bg-white/5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-left">
-                          <div className="w-8 h-8 rounded-full bg-indigo/10 text-indigo flex items-center justify-center"><FaPen /></div>
-                          <span className="font-semibold text-charcoal dark:text-white text-sm">Edit Business Profile</span>
-                        </button>
-                        <button className="w-full p-3 flex items-center gap-3 bg-gray-50 dark:bg-white/5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-left">
-                          <div className="w-8 h-8 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center"><FaPlus /></div>
-                          <span className="font-semibold text-charcoal dark:text-white text-sm">Add New Service</span>
-                        </button>
-                        <button className="w-full p-3 flex items-center gap-3 bg-gray-50 dark:bg-white/5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-left">
-                          <div className="w-8 h-8 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center"><FaBullhorn /></div>
-                          <span className="font-semibold text-charcoal dark:text-white text-sm">Promote Business</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="bg-indigo text-white rounded-2xl p-6 relative overflow-hidden">
-                       <div className="relative z-10">
-                         <h3 className="font-bold text-lg mb-1">Tip of the Day</h3>
-                         <p className="text-sm opacity-90 mb-4">Responding to reviews within 24 hours increases customer retention by 15%.</p>
-                         <button className="text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition">Read More</button>
-                       </div>
-                       <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-xl -mr-8 -mt-8"></div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'bookings' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                <div className="flex justify-between items-center">
-                   <h2 className="text-2xl font-bold text-charcoal dark:text-white">All Bookings</h2>
-                   <button 
-                     onClick={() => setShowBookingModal(true)}
-                     className="px-6 py-2 bg-indigo text-white font-bold rounded-lg hover:bg-indigo/90 transition"
-                   >
-                     Add Booking
-                   </button>
-                </div>
-                <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6">
-                   <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead>
-                          <tr className="text-gray-500 border-b border-gray-100 dark:border-white/10">
-                            <th className="pb-3 font-semibold">Customer</th>
-                            <th className="pb-3 font-semibold">Service</th>
-                            <th className="pb-3 font-semibold">Date</th>
-                            <th className="pb-3 font-semibold">Status</th>
-                            <th className="pb-3 font-semibold text-right">Amount</th>
-                            <th className="pb-3 font-semibold text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                          {recentBookings.map((booking, idx) => (
-                            <tr key={idx} className="group hover:bg-gray-50 dark:hover:bg-white/5 transition">
-                              <td className="py-4 font-bold text-charcoal dark:text-white">{booking.customer}</td>
-                              <td className="py-4 text-gray-600 dark:text-gray-300">{booking.service}</td>
-                              <td className="py-4 text-gray-500">{booking.date}</td>
-                              <td className="py-4">
-                                <span className={`inline-block px-2 py-1 rounded-md text-xs font-bold ${
-                                  booking.status === 'Confirmed' ? 'bg-green-100 text-green-600' :
-                                  booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-600' :
-                                  booking.status === 'Cancelled' ? 'bg-red-100 text-red-600' :
-                                  'bg-gray-100 text-gray-600'
-                                }`}>
-                                  {booking.status}
-                                </span>
-                              </td>
-                              <td className="py-4 text-right font-bold text-charcoal dark:text-white">{booking.amount}</td>
-                              <td className="py-4 text-right">
-                                <button className="text-indigo hover:text-indigo/80 font-bold text-xs">Manage</button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                </div>
               </div>
-            )}
 
-            {activeTab === 'customers' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-charcoal dark:text-white">Customers</h2>
-                    <button className="px-6 py-2 bg-indigo text-white font-bold rounded-lg hover:bg-indigo/90 transition flex items-center gap-2">
-                       <FaPlus /> Add Customer
-                    </button>
-                 </div>
-                 <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead>
-                          <tr className="text-gray-500 border-b border-gray-100 dark:border-white/10">
-                            <th className="pb-3 font-semibold">Name</th>
-                            <th className="pb-3 font-semibold">Contact</th>
-                            <th className="pb-3 font-semibold">Visits</th>
-                            <th className="pb-3 font-semibold">Total Spend</th>
-                            <th className="pb-3 font-semibold">Last Visit</th>
-                            <th className="pb-3 font-semibold text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                          {customers.map((customer) => (
-                            <tr key={customer.id} className="group hover:bg-gray-50 dark:hover:bg-white/5 transition">
-                              <td className="py-4 font-bold text-charcoal dark:text-white">{customer.name}</td>
-                              <td className="py-4 text-gray-600 dark:text-gray-300">
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-2"><FaEnvelope className="text-xs text-gray-400" /> {customer.email}</div>
-                                  <div className="flex items-center gap-2"><FaPhone className="text-xs text-gray-400" /> {customer.phone}</div>
-                                </div>
-                              </td>
-                              <td className="py-4 text-gray-500">{customer.totalVisits}</td>
-                              <td className="py-4 font-bold text-green-600">{customer.totalSpend}</td>
-                              <td className="py-4 text-gray-500">{customer.lastVisit}</td>
-                              <td className="py-4 text-right">
-                                <button className="text-indigo hover:text-indigo/80 font-bold text-xs">View</button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                 </div>
-              </div>
-            )}
-
-            {activeTab === 'reviews' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                 <h2 className="text-2xl font-bold text-charcoal dark:text-white">Reviews</h2>
-                 <div className="grid gap-4">
-                   {reviews.map((review) => (
-                     <div key={review.id} className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6">
-                       <div className="flex justify-between items-start mb-4">
-                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-white/10 flex items-center justify-center font-bold text-gray-500 dark:text-white">
-                             {review.user.charAt(0)}
-                           </div>
-                           <div>
-                             <div className="font-bold text-charcoal dark:text-white">{review.user}</div>
-                             <div className="text-xs text-gray-500">{review.date}</div>
-                           </div>
-                         </div>
-                         <div className="flex text-yellow-400 text-sm">
-                           {[...Array(5)].map((_, i) => (
-                             <FaStar key={i} className={i < review.rating ? "text-yellow-400" : "text-gray-300"} />
-                           ))}
-                         </div>
-                       </div>
-                       <p className="text-gray-600 dark:text-gray-300 mb-4">&quot;{review.content}&quot;</p>
-                       
-                       {review.reply ? (
-                         <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 text-sm">
-                           <div className="font-bold text-indigo mb-1 flex items-center gap-2"><FaReply /> Response from you</div>
-                           <p className="text-gray-600 dark:text-gray-400">{review.reply}</p>
-                         </div>
-                       ) : (
-                         <button className="text-indigo font-bold text-sm hover:underline flex items-center gap-2">
-                           <FaReply /> Reply to Review
-                         </button>
-                       )}
-                     </div>
-                   ))}
-                 </div>
-              </div>
-            )}
-
-            {activeTab === 'gallery' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                 <div className="flex justify-between items-center">
-                   <div>
-                     <h2 className="text-2xl font-bold text-charcoal dark:text-white">Business Gallery</h2>
-                     <p className="text-gray-600 dark:text-gray-400 text-sm">Showcase your business with high-quality photos.</p>
-                   </div>
-                   <button className="px-6 py-2 bg-indigo text-white font-bold rounded-lg hover:bg-indigo/90 transition flex items-center gap-2">
-                     <FaPlus /> Add Photo
-                   </button>
-                 </div>
-                 
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4, 5].map((item) => (
-                      <div key={item} className="group relative aspect-square bg-gray-100 dark:bg-white/5 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
-                        <Image 
-                          src={`https://source.unsplash.com/random/400x400?business,${item}`} 
-                          alt="Gallery item" 
-                          fill
-                          className="object-cover transition duration-300 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-3">
-                           <button aria-label="Edit photo" className="w-10 h-10 rounded-full bg-white text-charcoal flex items-center justify-center hover:bg-gray-100 transition">
-                             <FaPen />
-                           </button>
-                           <button aria-label="Delete photo" className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition">
-                             <FaTrash />
-                           </button>
+              {/* Recent activity */}
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv">Latest bookings</h3>
+                  <button onClick={() => setTab('bookings')} className="text-sm font-semibold text-primary dark:text-primary-bright hover:underline">
+                    Manage all
+                  </button>
+                </div>
+                {allBookings.length === 0 ? (
+                  <p className="text-sm text-muted">No customer bookings through Finda yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {allBookings.slice(0, 3).map((b) => (
+                      <div key={b.id} className="flex items-center gap-3 p-3 bg-sunken-light/50 dark:bg-white/5 rounded-xl">
+                        <span className="w-9 h-9 rounded-full bg-white dark:bg-white/10 text-xs font-bold flex items-center justify-center shrink-0 text-ink-700 dark:text-ink-700-inv">
+                          MO
+                        </span>
+                        <div className="flex-1 min-w-0 text-sm">
+                          <span className="font-semibold text-ink-900 dark:text-ink-900-inv">{b.serviceName}</span>
+                          <span className="text-muted"> · {new Date(`${b.date}T00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {b.time}</span>
                         </div>
+                        <span className={`badge text-[10px] capitalize ${b.status === 'confirmed' ? 'badge-success' : b.status === 'pending' ? 'badge-accent' : 'badge-neutral'}`}>
+                          {b.status}
+                        </span>
                       </div>
                     ))}
-                    <button className="aspect-square border-2 border-dashed border-gray-300 dark:border-white/20 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:text-indigo hover:border-indigo transition hover:bg-indigo/5">
-                      <FaPlus className="text-3xl mb-2" />
-                      <span className="font-bold text-sm">Upload Photo</span>
-                    </button>
-                 </div>
+                  </div>
+                )}
               </div>
-            )}
+            </>
+          )}
 
-            {activeTab === 'settings' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                 <h2 className="text-2xl font-bold text-charcoal dark:text-white">Business Settings</h2>
-                 
-                 <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 space-y-6">
-                    <div>
-                      <h3 className="text-lg font-bold text-charcoal dark:text-white mb-4 border-b border-gray-100 dark:border-white/10 pb-2">Basic Information</h3>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="business-name" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Business Name</label>
-                          <input id="business-name" type="text" defaultValue="The Rustic Spoon" className="w-full p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo transition" />
+          {tab === 'bookings' && (
+            <div className="space-y-4">
+              {allBookings.length === 0 && (
+                <div className="card p-12 text-center">
+                  <p className="text-muted mb-4">No bookings yet. Share your Finda page to get discovered.</p>
+                  <Link href={`/business/${business.id}`} className="btn-primary btn-sm">View public page</Link>
+                </div>
+              )}
+              {allBookings.map((b) => (
+                <div key={b.id} className="card p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex-1">
+                    <div className="font-semibold text-ink-900 dark:text-ink-900-inv">{b.serviceName}</div>
+                    <div className="text-sm text-muted mt-0.5">
+                      {new Date(`${b.date}T00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} · {b.time}
+                    </div>
+                    {b.notes && <div className="text-xs text-ink-400 mt-1 italic">“{b.notes}”</div>}
+                  </div>
+                  <span className={`badge capitalize ${b.status === 'confirmed' ? 'badge-success' : b.status === 'pending' ? 'badge-accent' : b.status === 'completed' ? 'badge-neutral' : 'badge-danger'}`}>
+                    {b.status}
+                  </span>
+                  <div className="flex gap-2">
+                    {b.status === 'pending' && (
+                      <>
+                        <button onClick={() => store.confirmBooking(b.id)} className="btn-primary btn-sm">
+                          <FaCircleCheck aria-hidden /> Confirm
+                        </button>
+                        <button onClick={() => store.cancelBooking(b.id)} className="btn-secondary btn-sm !text-danger !border-danger/30">
+                          <FaXmark aria-hidden />
+                        </button>
+                      </>
+                    )}
+                    {b.status === 'confirmed' && (
+                      <button onClick={() => store.completeBooking(b.id)} className="btn-secondary btn-sm">
+                        <FaCircleCheck className="text-success" aria-hidden /> Mark completed
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'products' && (
+            <div className="space-y-4">
+              <div className="card p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv">Storefront products</h3>
+                  <p className="text-sm text-muted mt-0.5">
+                    What customers order from your Finda storefront. Keep stock counts honest.
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    store.addProduct({
+                      businessId: business.id,
+                      name: 'New product',
+                      price: '₦0',
+                      stock: 0,
+                    })
+                  }
+                  className="btn-primary btn-sm shrink-0"
+                >
+                  <FaPlus aria-hidden /> Add product
+                </button>
+              </div>
+
+              {products.length === 0 ? (
+                <div className="card p-12 text-center">
+                  <span className="w-16 h-16 rounded-2xl bg-sunken-light dark:bg-white/5 flex items-center justify-center mx-auto mb-5">
+                    <FaBoxOpen className="text-2xl text-ink-300 dark:text-ink-300-inv" aria-hidden />
+                  </span>
+                  <h3 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-2">
+                    No products yet
+                  </h3>
+                  <p className="text-muted mb-6 max-w-sm mx-auto">
+                    Add what you sell — meals, goods, tickets — and customers will
+                    order from your storefront with pickup or delivery.
+                  </p>
+                  <button
+                    onClick={() =>
+                      store.addProduct({
+                        businessId: business.id,
+                        name: 'New product',
+                        price: '₦0',
+                        stock: 0,
+                      })
+                    }
+                    className="btn-primary btn-sm"
+                  >
+                    <FaPlus aria-hidden /> Add your first product
+                  </button>
+                </div>
+              ) : (
+                products.map((p) => {
+                  const lowStock = p.stock !== null && p.stock > 0 && p.stock <= 3;
+                  return (
+                    <div key={p.id} className="card p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-sunken-light dark:bg-white/5 flex items-center justify-center shrink-0 text-ink-400">
+                        <FaBoxOpen aria-hidden />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-ink-900 dark:text-ink-900-inv">{p.name}</div>
+                        <div className="text-sm text-muted">
+                          {p.price}
+                          {' · '}
+                          {p.stock === null ? (
+                            'Made to order'
+                          ) : (
+                            <span className={lowStock ? 'text-danger font-semibold' : ''}>
+                              {p.stock <= 0 ? 'Out of stock' : `${p.stock} in stock${lowStock ? ' — low!' : ''}`}
+                            </span>
+                          )}
                         </div>
-                        <div>
-                          <label htmlFor="category" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Category</label>
-                          <select id="category" className="w-full p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo transition">
-                            <option>Restaurant</option>
-                            <option>Salon</option>
-                            <option>Retail</option>
-                          </select>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {p.stock !== null && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => store.updateProductStock(p.id, Math.max(0, (p.stock ?? 0) - 1))}
+                              className="w-8 h-8 rounded-lg border border-line-light dark:border-line-dark text-ink-700 dark:text-ink-700-inv hover:bg-sunken-light dark:hover:bg-white/5 transition"
+                              aria-label={`Decrease stock of ${p.name}`}
+                            >
+                              −
+                            </button>
+                            <button
+                              onClick={() => store.updateProductStock(p.id, (p.stock ?? 0) + 1)}
+                              className="w-8 h-8 rounded-lg border border-line-light dark:border-line-dark text-ink-700 dark:text-ink-700-inv hover:bg-sunken-light dark:hover:bg-white/5 transition"
+                              aria-label={`Increase stock of ${p.name}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => store.toggleProductSoldOut(p.id)}
+                          className={`btn-sm px-3 py-2 rounded-lg text-sm font-semibold border transition ${
+                            p.soldOut
+                              ? 'text-success border-success/30 hover:bg-success-soft dark:hover:bg-success/10'
+                              : 'text-ink-500 dark:text-ink-500-inv border-line-light dark:border-line-dark hover:bg-sunken-light dark:hover:bg-white/5'
+                          }`}
+                        >
+                          {p.soldOut ? 'Mark available' : 'Mark sold out'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+
+              <div className="card p-5 flex items-start gap-3 text-sm text-muted">
+                <FaClockRotateLeft className="mt-0.5 shrink-0 text-ink-400" aria-hidden />
+                Stock edits and sold-out toggles reflect instantly on your public
+                profile and storefront — no republishing needed.
+              </div>
+            </div>
+          )}
+
+          {tab === 'orders' && (
+            <div className="space-y-4">
+              <div className="card p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv">Storefront orders</h3>
+                  <p className="text-sm text-muted mt-0.5">
+                    {orders.length} order{orders.length !== 1 ? 's' : ''} · {activeOrders.length} active · {store.naira(orderRevenue)} revenue
+                  </p>
+                </div>
+                <Link href={`/store/${business.slug}`} className="btn-secondary btn-sm shrink-0">
+                  <FaStore aria-hidden /> View storefront
+                </Link>
+              </div>
+
+              {orders.length === 0 ? (
+                <div className="card p-12 text-center">
+                  <span className="w-16 h-16 rounded-2xl bg-sunken-light dark:bg-white/5 flex items-center justify-center mx-auto mb-5">
+                    <FaBagShopping className="text-2xl text-ink-300 dark:text-ink-300-inv" aria-hidden />
+                  </span>
+                  <h3 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-2">
+                    No orders yet
+                  </h3>
+                  <p className="text-muted mb-6 max-w-sm mx-auto">
+                    Orders from your storefront land here. Share your store link to
+                    start selling — stock updates automatically.
+                  </p>
+                  <Link href={`/store/${business.slug}`} className="btn-primary btn-sm">
+                    Open my storefront
+                  </Link>
+                </div>
+              ) : (
+                orders.map((order) => {
+                  return (
+                    <div key={order.id} className="card p-5">
+                      <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 className="font-semibold text-ink-900 dark:text-ink-900-inv">
+                              #{order.id.slice(-6).toUpperCase()} · {order.customerName}
+                            </h4>
+                            <span className={`badge capitalize text-[10px] ${
+                              order.status === 'confirmed' ? 'badge-success' : order.status === 'ready' ? 'badge-accent' : order.status === 'completed' ? 'badge-neutral' : order.status === 'cancelled' ? 'badge-danger' : 'badge-accent'
+                            }`}>
+                              {order.status}
+                            </span>
+                            <span className="badge text-[10px] badge-neutral inline-flex items-center gap-1">
+                              {order.fulfilment === 'delivery' ? <FaTruckFast className="text-[9px]" aria-hidden /> : <FaStore className="text-[9px]" aria-hidden />}
+                              {order.fulfilment}
+                            </span>
+                            {order.payment === 'on_pickup' && order.status !== 'completed' && order.status !== 'cancelled' && (
+                              <span className="badge-accent text-[10px]">Pay on pickup</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-ink-700 dark:text-ink-700-inv">
+                            {order.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}
+                          </p>
+                          <p className="text-xs text-muted mt-1">
+                            {order.customerPhone}
+                            {order.fulfilment === 'delivery' && order.address ? ` · ${order.address}` : ' · Pickup at your location'}
+                            {order.note ? ` · “${order.note}”` : ''}
+                          </p>
                         </div>
-                        <div className="md:col-span-2">
-                          <label htmlFor="description" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Description</label>
-                          <textarea id="description" rows={3} className="w-full p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo transition" defaultValue="Experience the authentic taste of Italy right in the heart of the city..."></textarea>
+                        <div className="flex lg:flex-col items-center lg:items-end gap-2 shrink-0">
+                          <span className="font-display font-bold text-ink-900 dark:text-ink-900-inv">{store.naira(order.total)}</span>
+                          <div className="flex gap-2">
+                            {order.status === 'pending' && (
+                              <>
+                                <button onClick={() => store.setOrderStatus(order.id, 'confirmed')} className="btn-primary btn-sm">
+                                  <FaCircleCheck aria-hidden /> Confirm
+                                </button>
+                                <button
+                                  onClick={() => store.setOrderStatus(order.id, 'cancelled')}
+                                  className="btn-secondary btn-sm !text-danger !border-danger/30"
+                                  aria-label="Cancel order"
+                                >
+                                  <FaXmark aria-hidden />
+                                </button>
+                              </>
+                            )}
+                            {order.status === 'confirmed' && (
+                              <button onClick={() => store.setOrderStatus(order.id, 'ready')} className="btn-primary btn-sm">
+                                Mark ready
+                              </button>
+                            )}
+                            {order.status === 'ready' && (
+                              <button onClick={() => store.setOrderStatus(order.id, 'completed')} className="btn-primary btn-sm">
+                                Complete
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
+                  );
+                })
+              )}
+            </div>
+          )}
 
-                    <div>
-                      <h3 className="text-lg font-bold text-charcoal dark:text-white mb-4 border-b border-gray-100 dark:border-white/10 pb-2">Contact & Location</h3>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="phone" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Phone Number</label>
-                          <div className="relative">
-                            <FaPhone className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
-                            <input id="phone" type="text" defaultValue="(555) 123-4567" className="w-full pl-10 p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo transition" />
+          {tab === 'updates' && (
+            <UpdatesTab businessId={business.id} businessName={business.name} followers={followers} />
+          )}
+
+          {tab === 'customers' && (
+            <div className="card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-line-light dark:border-line-dark bg-sunken-light/50 dark:bg-white/5 text-left">
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400">Customer</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400 hidden md:table-cell">Contact</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400">Visits</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400">Spend</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400 hidden lg:table-cell">Last visit</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line-light dark:divide-line-dark">
+                    {customers.map((c) => (
+                      <tr key={c.email} className="hover:bg-sunken-light/50 dark:hover:bg-white/5 transition">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className="w-9 h-9 rounded-full bg-primary-soft dark:bg-primary/20 text-primary dark:text-primary-bright text-xs font-bold flex items-center justify-center">
+                              {c.name.split(' ').map((n) => n[0]).join('')}
+                            </span>
+                            <span className="font-semibold text-ink-900 dark:text-ink-900-inv">{c.name}</span>
                           </div>
-                        </div>
-                        <div>
-                          <label htmlFor="website" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Website</label>
-                          <input id="website" type="text" defaultValue="www.rusticspoon.com" className="w-full p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo transition" />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label htmlFor="address" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Address</label>
-                          <div className="relative">
-                            <FaMapPin className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
-                            <input id="address" type="text" defaultValue="123 Main St, Downtown, New York, NY 10001" className="w-full pl-10 p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo transition" />
-                          </div>
-                        </div>
+                        </td>
+                        <td className="px-6 py-4 hidden md:table-cell">
+                          <span className="flex items-center gap-1.5 text-ink-700 dark:text-ink-700-inv">
+                            <FaEnvelope className="text-ink-400 text-xs" aria-hidden /> {c.email}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-semibold text-ink-900 dark:text-ink-900-inv">{c.visits}</td>
+                        <td className="px-6 py-4 font-semibold text-ink-900 dark:text-ink-900-inv">{c.spend}</td>
+                        <td className="px-6 py-4 text-ink-700 dark:text-ink-700-inv hidden lg:table-cell">{c.last}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {tab === 'reviews' && (
+            <div className="space-y-4">
+              {reviews.length === 0 && (
+                <div className="card p-12 text-center">
+                  <p className="text-muted">No reviews yet. Reviews from verified visits build your ranking.</p>
+                </div>
+              )}
+              {reviews.map((r) => (
+                <article key={r.id} className="card p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="w-10 h-10 rounded-full bg-primary-soft dark:bg-primary/20 text-primary dark:text-primary-bright text-xs font-bold flex items-center justify-center">
+                      {r.initials}
+                    </span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-ink-900 dark:text-ink-900-inv text-sm">{r.author}</div>
+                      <div className="flex items-center gap-1.5 text-xs text-ink-400">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <FaStar key={i} className={i <= r.rating ? 'text-gold' : 'text-ink-300'} aria-hidden />
+                        ))}
+                        <span>{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                       </div>
                     </div>
-
-                    <div className="pt-4">
-                      <button className="px-8 py-3 bg-indigo text-white font-bold rounded-xl hover:bg-indigo/90 transition shadow-lg shadow-indigo/20">
-                        Save Changes
+                  </div>
+                  <p className="text-ink-700 dark:text-ink-700-inv leading-relaxed mb-4">{r.text}</p>
+                  {r.reply ? (
+                    <div className="pl-4 border-l-2 border-primary/30">
+                      <div className="text-xs font-bold text-primary dark:text-primary-bright mb-1 inline-flex items-center gap-1.5">
+                        <FaReply aria-hidden /> Your public reply
+                      </div>
+                      <p className="text-sm text-ink-700 dark:text-ink-700-inv leading-relaxed">{r.reply.text}</p>
+                      <button
+                        onClick={() => setReplyTo(replyTo === r.id ? r.id : null)}
+                        className="text-xs font-semibold text-muted hover:text-primary dark:hover:text-primary-bright mt-2"
+                      >
+                        Edit reply
                       </button>
                     </div>
-                 </div>
+                  ) : (
+                    <button
+                      onClick={() => setReplyTo(replyTo === r.id ? null : r.id)}
+                      className="text-sm font-semibold text-primary dark:text-primary-bright inline-flex items-center gap-1.5 hover:underline"
+                    >
+                      <FaReply className="text-xs" aria-hidden /> Reply publicly
+                    </button>
+                  )}
+                  {replyTo === r.id && (
+                    <div className="mt-4 flex gap-3">
+                      <input
+                        type="text"
+                        defaultValue={r.reply?.text ?? ''}
+                        placeholder={`Thank ${r.author.split(' ')[0]} for the feedback…`}
+                        className="field flex-1"
+                        aria-label="Public reply"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            store.replyToReview(r.id, (e.target as HTMLInputElement).value);
+                            setReplyTo(null);
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={(e) => {
+                          const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                          store.replyToReview(r.id, input?.value ?? '');
+                          setReplyTo(null);
+                        }}
+                        className="btn-primary btn-sm shrink-0"
+                      >
+                        Post
+                      </button>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+
+          {tab === 'gallery' && (
+            <div className="card p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv">Photo gallery</h3>
+                  <p className="text-xs text-muted mt-0.5">Great photos earn more bookings. Lead with your best.</p>
+                </div>
+                <button className="btn-secondary btn-sm">
+                  <FaPlus aria-hidden /> Add photos
+                </button>
               </div>
-            )}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {galleryImages.map((img, i) => (
+                  <div key={i} className="relative aspect-[4/3] rounded-xl overflow-hidden bg-sunken-light group">
+                    <Image src={img} alt={`${business.name} photo ${i + 1}`} fill sizes="300px" className="object-cover" />
+                    {i === 0 && (
+                      <span className="absolute top-2 left-2 badge-primary text-[10px]">Cover</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-          </div>
-
-          {/* New Booking Modal */}
-          {showBookingModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-              <div className="bg-white dark:bg-charcoal rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-                <h3 className="text-xl font-bold text-charcoal dark:text-white mb-4">Create New Booking</h3>
-                <div className="space-y-4">
-                  <input type="text" aria-label="Customer Name" placeholder="Customer Name" className="w-full p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo" />
-                  <input type="datetime-local" aria-label="Booking date and time" className="w-full p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo" />
-                  <select aria-label="Select Service" className="w-full p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-indigo">
-                    <option>Select Service</option>
-                    <option>Dinner for 2</option>
-                    <option>Private Event</option>
-                  </select>
+          {tab === 'settings' && (
+            <div className="card p-8 space-y-6 max-w-2xl">
+              <h3 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv">Business profile</h3>
+              <div>
+                <label htmlFor="bname" className="field-label">Business name</label>
+                <input id="bname" defaultValue={business.name} className="field" />
+              </div>
+              <div>
+                <label htmlFor="bdesc" className="field-label">Description</label>
+                <textarea id="bdesc" rows={4} defaultValue={business.description} className="field resize-none" />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div>
+                  <label htmlFor="bphone" className="field-label">Phone</label>
+                  <div className="relative">
+                    <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden />
+                    <input id="bphone" defaultValue={business.phone} className="field !pl-11" />
+                  </div>
                 </div>
-                <div className="flex gap-3 justify-end mt-6">
-                  <button 
-                    onClick={() => setShowBookingModal(false)}
-                    className="px-4 py-2 font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={() => { setShowBookingModal(false); alert('Booking created!'); }}
-                    className="px-4 py-2 bg-indigo text-white font-bold rounded-lg hover:bg-indigo/90 transition"
-                  >
-                    Create Booking
-                  </button>
+                <div>
+                  <label htmlFor="baddr" className="field-label">Address</label>
+                  <div className="relative">
+                    <FaLocationDot className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden />
+                    <input id="baddr" defaultValue={business.address} className="field !pl-11" />
+                  </div>
                 </div>
+              </div>
+              <div className="flex justify-end">
+                <button className="btn-primary">Save changes</button>
               </div>
             </div>
           )}
         </div>
-      </main>
-      
-      <Footer />
+      </div>
+    </PageShell>
+  );
+}
+
+const UPDATE_TYPES = [
+  { key: 'offer', label: 'Offer' },
+  { key: 'event', label: 'Event' },
+  { key: 'product', label: 'New in store' },
+  { key: 'news', label: 'Update' },
+] as const;
+
+function UpdatesTab({
+  businessId,
+  businessName,
+  followers,
+}: {
+  businessId: string;
+  businessName: string;
+  followers: number;
+}) {
+  useStoreVersion();
+  const [type, setType] = useState<string>('offer');
+  const [text, setText] = useState('');
+  const [scope, setScope] = useState<'public' | 'followers'>('public');
+  const [expires, setExpires] = useState('');
+  const [error, setError] = useState('');
+  const [posted, setPosted] = useState(false);
+
+  const updates = social.getUpdatesForBusiness(businessId);
+
+  const handlePost = () => {
+    if (text.trim().length < 10) {
+      setError('Say a little more — at least 10 characters.');
+      return;
+    }
+    social.addUpdate({
+      businessId,
+      type: type as Parameters<typeof social.addUpdate>[0]['type'],
+      text,
+      scope,
+      expiresAt: expires || undefined,
+    });
+    setText('');
+    setExpires('');
+    setError('');
+    setPosted(true);
+    setTimeout(() => setPosted(false), 2500);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Composer */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv">Post an update</h3>
+            <p className="text-sm text-muted mt-0.5 inline-flex items-center gap-1.5">
+              <FaUsers className="text-ink-400" aria-hidden />
+              {followers.toLocaleString()} followers see your posts in their feed
+            </p>
+          </div>
+          {posted && (
+            <span className="text-sm font-semibold text-success inline-flex items-center gap-1.5" role="status">
+              <FaCircleCheck aria-hidden /> Posted
+            </span>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {UPDATE_TYPES.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setType(t.key)}
+                aria-pressed={type === t.key}
+                className={`px-3.5 py-1.5 rounded-full text-sm font-semibold transition ${
+                  type === t.key
+                    ? 'bg-primary text-white'
+                    : 'bg-sunken-light dark:bg-white/5 text-ink-700 dark:text-ink-700-inv hover:bg-primary-soft dark:hover:bg-primary/15'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={3}
+            placeholder={`What's happening at ${businessName}? An offer, an event, fresh stock…`}
+            className="field resize-none"
+            aria-label="Update text"
+          />
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="upd-scope" className="field-label">Audience</label>
+              <select
+                id="upd-scope"
+                value={scope}
+                onChange={(e) => setScope(e.target.value as 'public' | 'followers')}
+                className="field"
+              >
+                <option value="public">Everyone on Finda</option>
+                <option value="followers">Followers only (reward)</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="upd-exp" className="field-label">Ends on (optional — for offers)</label>
+              <input
+                id="upd-exp"
+                type="date"
+                value={expires}
+                onChange={(e) => setExpires(e.target.value)}
+                className="field"
+              />
+            </div>
+          </div>
+          {error && <p className="text-sm font-semibold text-danger" role="alert">{error}</p>}
+          <div className="flex justify-end">
+            <button onClick={handlePost} className="btn-primary btn-sm">
+              <FaBullhorn aria-hidden /> Post update
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* History */}
+      <div>
+        <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv mb-4">Your updates</h3>
+        {updates.length === 0 ? (
+          <div className="card p-10 text-center">
+            <p className="text-muted">
+              No updates yet. Businesses that post weekly get more followers and orders.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {updates.map((u) => (
+              <article key={u.id} className="card p-5 flex items-start gap-4">
+                <span className="badge-accent text-[10px] capitalize shrink-0 mt-0.5">{u.type}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] text-ink-700 dark:text-ink-700-inv leading-relaxed">{u.text}</p>
+                  <p className="text-xs text-muted mt-1.5">
+                    {new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {' · '}
+                    {u.scope === 'followers' ? 'Followers only' : 'Public'}
+                    {u.expiresAt && ` · ends ${new Date(u.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => social.deleteUpdate(u.id)}
+                  className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-ink-400 hover:text-danger hover:bg-danger-soft dark:hover:bg-danger/10 transition"
+                  aria-label="Delete update"
+                >
+                  <FaTrash className="text-xs" aria-hidden />
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

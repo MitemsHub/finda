@@ -1,137 +1,170 @@
 "use client";
 
-import Header from '@/components/landing/Header';
-import { FaCalendarCheck, FaLocationDot, FaFilter } from 'react-icons/fa6';
+import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
+import { FaCalendarCheck, FaLocationDot, FaXmark, FaCircleCheck } from 'react-icons/fa6';
+import { PageShell, PageTitle } from '@/components/PageShell';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import * as store from '@/lib/data/demo';
+import { useStoreVersion } from '@/lib/hooks/useStore';
+
+type Filter = 'all' | 'upcoming' | 'completed' | 'cancelled';
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
+
+function statusBadge(status: string) {
+  switch (status) {
+    case 'confirmed':
+      return 'badge-success';
+    case 'pending':
+      return 'badge-accent';
+    case 'completed':
+      return 'badge-neutral';
+    default:
+      return 'badge-danger';
+  }
+}
 
 export default function BookingsPage() {
-  const bookings = [
-    {
-      id: 1,
-      business: "The Rustic Spoon",
-      service: "Dinner Reservation",
-      date: "Today",
-      time: "7:00 PM",
-      status: "Confirmed",
-      address: "123 Main St, Downtown",
-      image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80",
-      price: "Free"
-    },
-    {
-      id: 2,
-      business: "Glow Spa & Wellness",
-      service: "Deep Tissue Massage",
-      date: "Oct 26, 2024",
-      time: "10:00 AM",
-      status: "Pending",
-      address: "456 Oak Ave, Westside",
-      image: "https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80",
-      price: "$85.00"
-    },
-    {
-      id: 3,
-      business: "Urban Fitness",
-      service: "Personal Training Session",
-      date: "Oct 20, 2024",
-      time: "4:00 PM",
-      status: "Completed",
-      address: "789 Pine Rd, Uptown",
-      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80",
-      price: "$60.00"
-    },
-    {
-      id: 4,
-      business: "Tech Fix Pro",
-      service: "Laptop Repair Diagnostic",
-      date: "Oct 15, 2024",
-      time: "1:30 PM",
-      status: "Cancelled",
-      address: "321 Elm St, Tech District",
-      image: "https://images.unsplash.com/photo-1581092921461-eab62e97a783?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80",
-      price: "$0.00"
-    }
-  ];
+  return (
+    <AuthGuard>
+      <BookingsContent />
+    </AuthGuard>
+  );
+}
+
+function BookingsContent() {
+  useStoreVersion();
+  const [filter, setFilter] = useState<Filter>('all');
+
+  const bookings = store.getBookings();
+  const filtered = bookings.filter((b) => {
+    if (filter === 'all') return true;
+    if (filter === 'upcoming') return b.status === 'confirmed' || b.status === 'pending';
+    return b.status === filter;
+  });
 
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
-      <Header />
-      
-      <main className="pt-28 pb-20 px-6 max-w-5xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
-          <div>
-            <h1 className="text-3xl font-black text-charcoal dark:text-white">My Bookings</h1>
-            <p className="text-gray-600 dark:text-gray-400">Manage your upcoming and past appointments</p>
-          </div>
-          <div className="flex items-center gap-3">
-             <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm font-semibold hover:bg-gray-50 dark:hover:bg-white/10 transition">
-               <FaFilter /> Filter
-             </button>
-             <select className="px-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm font-semibold outline-none cursor-pointer" aria-label="Filter by status">
-               <option>All Status</option>
-               <option>Confirmed</option>
-               <option>Pending</option>
-               <option>Completed</option>
-             </select>
-          </div>
-        </div>
+    <PageShell wide>
+      <PageTitle
+        title="My bookings"
+        subtitle="Manage your upcoming appointments and revisit where you've been."
+      />
 
+      {/* Filter tabs */}
+      <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide" role="tablist" aria-label="Filter bookings">
+        {FILTERS.map((f) => {
+          const count =
+            f.key === 'all'
+              ? bookings.length
+              : f.key === 'upcoming'
+              ? bookings.filter((b) => b.status === 'confirmed' || b.status === 'pending').length
+              : bookings.filter((b) => b.status === f.key).length;
+          return (
+            <button
+              key={f.key}
+              role="tab"
+              aria-selected={filter === f.key}
+              onClick={() => setFilter(f.key)}
+              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition ${
+                filter === f.key
+                  ? 'bg-primary text-white'
+                  : 'bg-sunken-light dark:bg-white/5 text-ink-700 dark:text-ink-700-inv hover:bg-primary-soft dark:hover:bg-primary/15'
+              }`}
+            >
+              {f.label}
+              <span className={`ml-1.5 text-xs ${filter === f.key ? 'text-white/70' : 'text-ink-400'}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="card p-14 text-center">
+          <span className="w-16 h-16 rounded-2xl bg-sunken-light dark:bg-white/5 flex items-center justify-center mx-auto mb-5">
+            <FaCalendarCheck className="text-2xl text-ink-300 dark:text-ink-300-inv" aria-hidden />
+          </span>
+          <h3 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-2">
+            No bookings here yet
+          </h3>
+          <p className="text-muted mb-6">
+            {filter === 'all'
+              ? 'When you book a service, it shows up here.'
+              : `You have no ${filter} bookings.`}
+          </p>
+          <Link href="/search" className="btn-primary btn-sm">Find something to book</Link>
+        </div>
+      ) : (
         <div className="space-y-4">
-          {bookings.map((booking) => (
-            <div key={booking.id} className="bg-white dark:bg-white/5 rounded-2xl p-5 border border-gray-100 dark:border-white/10 shadow-sm hover:shadow-md transition group">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="relative w-full md:w-48 h-32 rounded-xl overflow-hidden flex-shrink-0">
-                  <Image 
-                    src={booking.image} 
-                    alt={booking.business} 
-                    fill 
-                    className="object-cover group-hover:scale-105 transition duration-500"
+          {filtered.map((booking) => (
+            <div key={booking.id} className="card p-5 hover:shadow-card-hover transition">
+              <div className="flex flex-col md:flex-row gap-5">
+                <div className="relative w-full md:w-44 h-36 rounded-xl overflow-hidden bg-sunken-light shrink-0">
+                  <Image
+                    src={booking.businessImage}
+                    alt={booking.businessName}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 176px"
+                    className="object-cover"
                   />
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-xs font-bold text-white">
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-xs font-bold text-white">
                     {booking.price}
                   </div>
                 </div>
-                
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-2">
+
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <div className="flex items-start justify-between gap-3 mb-1.5">
                     <div>
-                      <h3 className="text-xl font-bold text-charcoal dark:text-white mb-1">{booking.business}</h3>
-                      <div className="text-teal font-semibold text-sm mb-2">{booking.service}</div>
+                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-ink-900-inv">
+                        {booking.businessName}
+                      </h3>
+                      <p className="text-sm text-primary dark:text-primary-bright font-semibold">{booking.serviceName}</p>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                      booking.status === 'Confirmed' ? 'bg-green-100 text-green-600 border-green-200' :
-                      booking.status === 'Pending' ? 'bg-orange-100 text-orange-600 border-orange-200' :
-                      booking.status === 'Completed' ? 'bg-gray-100 text-gray-600 border-gray-200' :
-                      'bg-red-100 text-red-600 border-red-200'
-                    }`}>
+                    <span className={`badge ${statusBadge(booking.status)} capitalize shrink-0`}>
                       {booking.status}
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-gray-600 dark:text-gray-300 mb-4">
-                    <div className="flex items-center gap-2">
-                      <FaCalendarCheck className="text-indigo" />
-                      <span>{booking.date} at {booking.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FaLocationDot className="text-indigo" />
-                      <span className="truncate">{booking.address}</span>
-                    </div>
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-500 dark:text-ink-500-inv mb-4">
+                    <span className="flex items-center gap-1.5">
+                      <FaCalendarCheck className="text-ink-400" aria-hidden />
+                      {new Date(`${booking.date}T00:00`).toLocaleDateString('en-US', {
+                        weekday: 'short', month: 'short', day: 'numeric',
+                      })}{' '}
+                      at {booking.time}
+                    </span>
+                    <span className="flex items-center gap-1.5 truncate">
+                      <FaLocationDot className="text-ink-400" aria-hidden />
+                      {booking.address}
+                    </span>
                   </div>
 
-                  <div className="flex gap-3 mt-auto">
-                    {booking.status !== 'Cancelled' && (
-                      <button className="px-4 py-2 bg-indigo text-white text-sm font-bold rounded-lg hover:bg-indigo/90 transition">
-                        View Details
+                  <div className="flex flex-wrap gap-2 mt-auto">
+                    <Link href={`/business/${booking.businessId}`} className="btn-secondary btn-sm">
+                      View business
+                    </Link>
+                    {booking.status === 'pending' && (
+                      <button
+                        onClick={() => store.cancelBooking(booking.id)}
+                        className="px-4 py-2 rounded-lg text-sm font-semibold text-danger border border-danger/30 hover:bg-danger-soft dark:hover:bg-danger/10 transition inline-flex items-center gap-1.5"
+                      >
+                        <FaXmark className="text-xs" aria-hidden /> Cancel
                       </button>
                     )}
-                    {booking.status === 'Pending' && (
-                      <button className="px-4 py-2 bg-white dark:bg-white/5 border border-red-200 text-red-500 text-sm font-bold rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                        Cancel
-                      </button>
-                    )}
-                    {booking.status === 'Completed' && (
-                      <button className="px-4 py-2 bg-white dark:bg-white/5 border border-teal/30 text-teal text-sm font-bold rounded-lg hover:bg-teal/5 transition">
-                        Write Review
+                    {booking.status === 'confirmed' && (
+                      <button
+                        onClick={() => store.completeBooking(booking.id)}
+                        className="px-4 py-2 rounded-lg text-sm font-semibold text-success border border-success/30 hover:bg-success-soft dark:hover:bg-success/10 transition inline-flex items-center gap-1.5"
+                      >
+                        <FaCircleCheck className="text-xs" aria-hidden /> Mark attended
                       </button>
                     )}
                   </div>
@@ -140,7 +173,7 @@ export default function BookingsPage() {
             </div>
           ))}
         </div>
-      </main>
-    </div>
+      )}
+    </PageShell>
   );
 }

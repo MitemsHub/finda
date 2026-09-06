@@ -2,78 +2,168 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────
+   finda — global styles
+   Warm-paper editorial identity. Semantic tokens live in
+   tailwind.config.ts; component classes live here.
+   ───────────────────────────────────────────────────────── */
+
 :root {
-  --background: #F9FAFB;
-  --foreground: #121212;
+  --background: #F7F5F0;
+  --foreground: #1C1A15;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #161512;
+  --foreground: #F2EFE6;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  transition: background-color 0.3s ease;
+  font-feature-settings: 'ss01' on;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Headings use the display serif */
+h1, h2, h3 {
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: rgba(31, 92, 69, 0.18);
+}
+
+/* Keep the scrollbar but make it quiet */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(28,26,21,0.18); border-radius: 8px; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(242,239,230,0.14); }
+::-webkit-scrollbar-track { background: transparent; }
 
 @layer components {
+  /* ── Surfaces ── */
+  .card {
+    @apply bg-white dark:bg-surface-dark rounded-2xl border border-line-light dark:border-line-dark shadow-card;
+  }
+  .card-hover {
+    @apply transition duration-300 hover:shadow-card-hover hover:-translate-y-0.5;
+  }
   .glass-effect {
-    @apply bg-[rgba(249,250,251,0.75)] backdrop-blur-[20px] border border-white/30;
+    @apply bg-[rgba(247,245,240,0.82)] backdrop-blur-xl border border-line-light;
   }
-  
   .dark .glass-effect {
-    @apply bg-[rgba(18,18,18,0.85)] border-white/10;
+    @apply bg-[rgba(22,21,18,0.82)] border-line-dark;
   }
 
-  .glass-dark {
-    @apply bg-[rgba(18,18,18,0.85)] backdrop-blur-[20px] border border-white/10;
+  /* ── Buttons ── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl px-6 py-3 transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-strong shadow-lift;
+  }
+  .btn-accent {
+    @apply btn bg-accent text-white hover:bg-accent-strong shadow-lift;
+  }
+  .btn-secondary {
+    @apply btn bg-white dark:bg-white/5 text-ink-900 dark:text-ink-900-inv border border-line-light dark:border-line-dark hover:border-primary/40 hover:text-primary dark:hover:text-primary-bright;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-ink-700 dark:text-ink-700-inv hover:bg-sunken-light dark:hover:bg-white/5;
+  }
+  .btn-sm {
+    @apply px-4 py-2 text-sm rounded-lg;
   }
 
-  .hero-gradient {
-    background: linear-gradient(135deg, #14B8A6 0%, #0D9488 50%, #6366F1 100%);
+  /* ── Form fields ── */
+  .field {
+    @apply w-full px-4 py-3 bg-white dark:bg-white/5 border border-line-light dark:border-line-dark rounded-xl outline-none transition text-ink-900 dark:text-ink-900-inv placeholder:text-ink-300 dark:placeholder:text-ink-400-inv focus:border-primary focus:ring-2 focus:ring-primary/15;
+  }
+  .field-label {
+    @apply block text-sm font-semibold text-ink-900 dark:text-ink-900-inv mb-2;
   }
 
-  .premium-glow {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4), 0 0 40px rgba(99, 102, 241, 0.2);
+  /* ── Badges & chips ── */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold;
+  }
+  .badge-primary {
+    @apply badge bg-primary-soft text-primary dark:bg-primary/15 dark:text-primary-bright;
+  }
+  .badge-accent {
+    @apply badge bg-accent-soft text-accent dark:bg-accent/15 dark:text-accent-bright;
+  }
+  .badge-gold {
+    @apply badge bg-gold-soft text-gold dark:bg-gold/15 dark:text-gold-bright;
+  }
+  .badge-success {
+    @apply badge bg-success-soft text-success dark:bg-success/15 dark:text-success-bright;
+  }
+  .badge-danger {
+    @apply badge bg-danger-soft text-danger dark:bg-danger/15 dark:text-danger-bright;
+  }
+  .badge-neutral {
+    @apply badge bg-sunken-light text-ink-700 dark:bg-white/10 dark:text-ink-700-inv;
   }
 
+  /* ── Eyebrow label (section kickers) ── */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-primary dark:text-primary-bright text-sm font-bold uppercase tracking-[0.14em];
+  }
+
+  /* ── Verified mark ── */
   .verified-badge {
-    background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+    @apply badge bg-primary text-white;
   }
+
+  /* ── Text helpers ── */
+  .text-muted {
+    @apply text-ink-500 dark:text-ink-500-inv;
+  }
+
+  /* ── Scroll containers ── */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }
 
-@layer utilities {
-  .fade-in-up {
-    animation: fadeInUp 0.8s ease-out forwards;
-  }
-  
-  .float-animation {
-    animation: float 3s ease-in-out infinite;
-  }
-  
-  .delay-1 { animation-delay: 0.2s; opacity: 0; animation-fill-mode: forwards; }
-  .delay-2 { animation-delay: 0.4s; opacity: 0; animation-fill-mode: forwards; }
-  .delay-3 { animation-delay: 0.6s; opacity: 0; animation-fill-mode: forwards; }
-  .delay-4 { animation-delay: 0.8s; opacity: 0; animation-fill-mode: forwards; }
+/* ── Animations (kept for compat with existing markup) ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+.fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
 
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-20px); }
 }
+.float-animation { animation: float 3s ease-in-out infinite; }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.delay-1 { animation-delay: 0.15s; opacity: 0; animation-fill-mode: forwards; }
+.delay-2 { animation-delay: 0.3s; opacity: 0; animation-fill-mode: forwards; }
+.delay-3 { animation-delay: 0.45s; opacity: 0; animation-fill-mode: forwards; }
+.delay-4 { animation-delay: 0.6s; opacity: 0; animation-fill-mode: forwards; }
+
+/* Reveal-on-scroll base (component adds .revealed via IntersectionObserver) */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-/* Hide Scrollbar */
-::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-up, .float-animation, .reveal {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

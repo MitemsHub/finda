@@ -1,400 +1,553 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import Link from 'next/link';
+import {
+  FaUser, FaStore, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaArrowRight,
+  FaCircleCheck, FaPhone, FaPlus, FaTrash, FaBoxOpen, FaBellConcierge,
+} from 'react-icons/fa6';
 import Header from '@/components/landing/Header';
 import Footer from '@/components/landing/Footer';
-import { FaRocket, FaUser, FaCircleCheck, FaStore, FaUserPlus, FaEnvelope, FaPhone, FaLock, FaEye, FaEyeSlash, FaArrowRight, FaGoogle, FaApple, FaFacebook, FaEnvelopeOpen, FaUserGear, FaStar, FaBriefcase, FaList } from 'react-icons/fa6';
-import Link from 'next/link';
+import * as store from '@/lib/data/demo';
 
-export default function GetStarted() {
+function passwordScore(pass: string) {
+  let score = 0;
+  if (pass.length >= 8) score += 25;
+  if (/[A-Z]/.test(pass)) score += 25;
+  if (/[0-9]/.test(pass)) score += 25;
+  if (/[^A-Za-z0-9]/.test(pass)) score += 25;
+  return score;
+}
+
+const SCORE_META = [
+  { label: 'Too short', color: 'bg-danger' },
+  { label: 'Weak', color: 'bg-danger' },
+  { label: 'Fair', color: 'bg-accent' },
+  { label: 'Good', color: 'bg-gold' },
+  { label: 'Strong', color: 'bg-success' },
+];
+
+const CATEGORIES = [
+  'Restaurants', 'Cafés', 'Beauty & Spas', 'Health & Fitness', 'Shopping',
+  'Automotive', 'Home Services', 'Nightlife', 'Health & Medical',
+];
+
+const NEIGHBORHOODS = [
+  'Yaba', 'Surulere', 'Ikoyi', 'Lekki', 'Victoria Island', 'Ikeja',
+  'Gbagada', 'Maryland', 'Apapa', 'Ajah', 'Ojota', 'Ikorodu',
+];
+
+interface BusinessBasics {
+  name: string; category: string; address: string;
+  neighborhood: string; phone: string; description: string;
+}
+interface ServiceRow { name: string; price: string; duration: string; description: string; }
+interface ProductRow { name: string; description: string; price: string; stock: string; }
+
+function GetStartedContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [accountType, setAccountType] = useState<'user' | 'business'>('user');
+  const [step, setStep] = useState(1);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [basics, setBasics] = useState<BusinessBasics | null>(null);
+  const [services, setServices] = useState<ServiceRow[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>([]);
 
-  const getPasswordStrength = (pass: string) => {
-    if (!pass) return 0;
-    let strength = 0;
-    if (pass.length > 5) strength += 20;
-    if (pass.length > 7) strength += 20;
-    if (/[A-Z]/.test(pass)) strength += 20;
-    if (/[0-9]/.test(pass)) strength += 20;
-    if (/[^A-Za-z0-9]/.test(pass)) strength += 20;
-    return strength;
+  useEffect(() => {
+    if (searchParams.get('type') === 'business') setAccountType('business');
+  }, [searchParams]);
+
+  const score = password ? passwordScore(password) : 0;
+  const meta = SCORE_META[score / 25];
+
+  const addServiceRow = () =>
+    setServices((s) => [...s, { name: '', price: '', duration: '', description: '' }]);
+  const addProductRow = () =>
+    setProducts((p) => [...p, { name: '', description: '', price: '', stock: '' }]);
+
+  const collectServices = (form: FormData): ServiceRow[] =>
+    form.getAll('serviceName').map((name, i) => ({
+      name: String(name).trim(),
+      price: String(form.getAll('servicePrice')[i] ?? '').trim(),
+      duration: String(form.getAll('serviceDuration')[i] ?? '').trim() || 'Flexible',
+      description: String(form.getAll('serviceDescription')[i] ?? '').trim(),
+    })).filter((s) => s.name && s.price);
+
+  const collectProducts = (form: FormData): ProductRow[] =>
+    form.getAll('productName').map((name, i) => ({
+      name: String(name).trim(),
+      description: String(form.getAll('productDescription')[i] ?? '').trim(),
+      price: String(form.getAll('productPrice')[i] ?? '').trim(),
+      stock: String(form.getAll('productStock')[i] ?? '').trim(),
+    })).filter((p) => p.name && p.price);
+
+  const finishSignup = (formEl: HTMLFormElement) => {
+    const form = new FormData(formEl);
+    const email = String(form.get('email') ?? '').trim();
+    const firstName = String(form.get('firstName') ?? '').trim();
+    const lastName = String(form.get('lastName') ?? '').trim();
+
+    if (!agreed) {
+      setError('Please agree to the Terms and Privacy Policy to continue.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+
+    let ownedBusinessId: string | undefined;
+    if (accountType === 'business' && basics) {
+      ownedBusinessId = store.submitBusiness({
+        name: basics.name,
+        description: basics.description,
+        category: basics.category,
+        address: basics.address,
+        neighborhood: basics.neighborhood,
+        phone: basics.phone,
+        email,
+        services,
+        products: products.map((p) => ({
+          name: p.name,
+          description: p.description || undefined,
+          price: p.price,
+          stock: p.stock === '' ? null : Number(p.stock) || 0,
+          image: undefined,
+        })),
+      });
+    }
+
+    store.signIn(email, {
+      ownedBusinessId,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+    });
+
+    setSubmitting(true);
+    setTimeout(() => {
+      router.push(accountType === 'business' ? '/business/dashboard' : '/dashboard');
+    }, 700);
   };
 
-  const strength = getPasswordStrength(password);
+  const nextFromStep = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
 
-  const getStrengthColor = (strength: number) => {
-    if (strength <= 20) return 'bg-red-500';
-    if (strength <= 40) return 'bg-orange-500';
-    if (strength <= 60) return 'bg-yellow-500';
-    if (strength <= 80) return 'bg-green-500';
-    return 'bg-teal';
-  };
+    if (accountType === 'user') {
+      finishSignup(e.currentTarget);
+      return;
+    }
 
-  const getStrengthLabel = (strength: number) => {
-    if (strength === 0) return 'Weak';
-    if (strength <= 20) return 'Very Weak';
-    if (strength <= 40) return 'Weak';
-    if (strength <= 60) return 'Medium';
-    if (strength <= 80) return 'Strong';
-    return 'Very Strong';
-  };
-
-  const scrollToForm = (type: 'user' | 'business') => {
-    setAccountType(type);
-    const element = document.getElementById('signup-form-section');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (step === 1) {
+      const form = new FormData(e.currentTarget);
+      const name = String(form.get('businessName') ?? '').trim();
+      if (!name) {
+        setError('Give your business a name to continue.');
+        return;
+      }
+      setBasics({
+        name,
+        category: String(form.get('category') ?? 'Shopping'),
+        address: String(form.get('address') ?? '').trim(),
+        neighborhood: String(form.get('neighborhood') ?? 'Lagos'),
+        phone: String(form.get('phone') ?? '').trim(),
+        description: String(form.get('businessDescription') ?? '').trim(),
+      });
+      setStep(2);
+    } else if (step === 2) {
+      const form = new FormData(e.currentTarget);
+      setServices(collectServices(form));
+      setProducts(collectProducts(form));
+      setStep(3);
+    } else {
+      finishSignup(e.currentTarget);
     }
   };
 
+  const stepTitle =
+    accountType === 'user'
+      ? 'Join Finda'
+      : step === 1
+      ? 'Tell us about your business'
+      : step === 2
+      ? 'What do you offer?'
+      : 'Create your login';
+
+  const stepSubtitle =
+    accountType === 'user'
+      ? 'Free forever. Book, save, review, and shop local storefronts.'
+      : step === 1
+      ? 'The basics — name, category, and where customers find you.'
+      : step === 2
+      ? "Services customers book, and products for your storefront. Skip what you don't sell yet."
+      : 'Last step — this becomes the owner login for your business dashboard.';
+
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
+    <div className="min-h-screen bg-paper-light dark:bg-paper-dark">
       <Header />
-      
-      <section id="hero-section" className="relative pt-32 pb-16 overflow-hidden bg-gradient-to-br from-teal/10 via-white dark:via-charcoal to-indigo/10">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-20 left-20 w-96 h-96 bg-teal rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-20 w-80 h-80 bg-indigo rounded-full blur-3xl"></div>
-        </div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center max-w-4xl mx-auto fade-in-up">
-            <div className="inline-flex items-center gap-2 bg-teal/10 text-teal px-4 py-2 rounded-full mb-6">
-              <FaRocket className="text-sm" />
-              <span className="text-sm font-semibold">Quick Setup</span>
+
+      <main className="pt-28 pb-24 px-6">
+        <div className="max-w-xl mx-auto">
+          {/* Account type toggle */}
+          <div className="grid grid-cols-2 gap-2 p-1.5 bg-sunken-light dark:bg-white/5 rounded-2xl mb-8">
+            {([
+              { key: 'user', label: "I'm exploring", icon: FaUser },
+              { key: 'business', label: 'I own a business', icon: FaStore },
+            ] as const).map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => { setAccountType(opt.key); setStep(1); setError(''); }}
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition ${
+                  accountType === opt.key
+                    ? 'bg-white dark:bg-surface-dark text-ink-900 dark:text-ink-900-inv shadow-card'
+                    : 'text-ink-500 dark:text-ink-500-inv hover:text-ink-900 dark:hover:text-ink-900-inv'
+                }`}
+                aria-pressed={accountType === opt.key}
+              >
+                <opt.icon aria-hidden /> {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Wizard progress */}
+          {accountType === 'business' && (
+            <div className="flex items-center gap-2 mb-6" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step} aria-label="Signup progress">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className={`h-1.5 flex-1 rounded-full transition-colors ${step >= n ? 'bg-primary' : 'bg-sunken-light dark:bg-white/10'}`}
+                />
+              ))}
+              <span className="text-xs font-semibold text-ink-400 dark:text-ink-400-inv ml-2 whitespace-nowrap">
+                Step {step} of 3
+              </span>
             </div>
-            <h1 className="text-5xl lg:text-6xl font-black text-charcoal dark:text-white leading-tight mb-6">
-              Get Started with Finda
+          )}
+
+          <div className="card p-8 sm:p-10">
+            <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-ink-900-inv mb-1.5">
+              {stepTitle}
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
-              Choose your path and start discovering or listing businesses in minutes
-            </p>
-          </div>
-        </div>
-      </section>
+            <p className="text-muted text-[15px] mb-8">{stepSubtitle}</p>
 
-      <section id="user-type-selection" className="py-20 bg-white dark:bg-charcoal">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16 fade-in-up">
-            <h2 className="text-4xl lg:text-5xl font-black text-charcoal dark:text-white mb-4">I Want To...</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">Select your account type to get started</p>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div id="user-card" 
-              onClick={() => scrollToForm('user')}
-              className={`glass-effect dark:glass-dark rounded-3xl p-10 border-2 transition duration-300 transform hover:-translate-y-1 cursor-pointer fade-in-up delay-1 ${accountType === 'user' ? 'border-teal ring-2 ring-teal/20' : 'border-white/40 dark:border-white/10 hover:border-teal'}`}
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-16 h-16 rounded-2xl hero-gradient flex items-center justify-center shadow-xl">
-                  <FaUser className="text-white text-2xl" />
-                </div>
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${accountType === 'user' ? 'border-teal' : 'border-gray-300 dark:border-gray-600'}`}>
-                  <div className={`w-5 h-5 rounded-full bg-teal transition-transform ${accountType === 'user' ? 'scale-100' : 'scale-0'}`}></div>
-                </div>
-              </div>
-              <h3 className="text-3xl font-black text-charcoal dark:text-white mb-4">Discover Businesses</h3>
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">Find and connect with verified local businesses, book services, and manage everything in one place.</p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <FaCircleCheck className="text-teal" />
-                  <span>Browse thousands of businesses</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <FaCircleCheck className="text-teal" />
-                  <span>Book appointments instantly</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <FaCircleCheck className="text-teal" />
-                  <span>Read verified reviews</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <FaCircleCheck className="text-teal" />
-                  <span>Save your favorites</span>
-                </li>
-              </ul>
-              <button className="w-full px-8 py-4 bg-teal text-white font-bold rounded-xl hover:bg-teal/90 transition shadow-lg">
-                Continue as User
-              </button>
-            </div>
-
-            <div id="business-card" 
-              onClick={() => scrollToForm('business')}
-              className={`glass-effect dark:glass-dark rounded-3xl p-10 border-2 transition duration-300 transform hover:-translate-y-1 cursor-pointer fade-in-up delay-2 ${accountType === 'business' ? 'border-indigo ring-2 ring-indigo/20' : 'border-white/40 dark:border-white/10 hover:border-indigo'}`}
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo to-purple-600 flex items-center justify-center shadow-xl">
-                  <FaStore className="text-white text-2xl" />
-                </div>
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${accountType === 'business' ? 'border-indigo' : 'border-gray-300 dark:border-gray-600'}`}>
-                  <div className={`w-5 h-5 rounded-full bg-indigo transition-transform ${accountType === 'business' ? 'scale-100' : 'scale-0'}`}></div>
-                </div>
-              </div>
-              <h3 className="text-3xl font-black text-charcoal dark:text-white mb-4">List My Business</h3>
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">Grow your customer base, manage bookings, and showcase your business to thousands of potential customers.</p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <FaCircleCheck className="text-indigo" />
-                  <span>Get verified badge</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <FaCircleCheck className="text-indigo" />
-                  <span>Receive instant bookings</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <FaCircleCheck className="text-indigo" />
-                  <span>Access analytics dashboard</span>
-                </li>
-                <li className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <FaCircleCheck className="text-indigo" />
-                  <span>Engage with customers</span>
-                </li>
-              </ul>
-              <button type="button" className="w-full px-8 py-4 bg-indigo text-white font-bold rounded-xl hover:bg-indigo/90 transition shadow-lg">
-                List Your Business
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="signup-form-section" className="py-20 bg-gradient-to-br from-teal/5 to-indigo/5 dark:from-teal/10 dark:to-indigo/10">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="glass-effect dark:glass-dark rounded-3xl p-8 lg:p-12 border border-white/40 dark:border-white/10 shadow-2xl fade-in-up">
-            <div className="text-center mb-10">
-              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl transition-colors duration-300 ${accountType === 'user' ? 'hero-gradient' : 'bg-gradient-to-br from-indigo to-purple-600'}`}>
-                {accountType === 'user' ? <FaUserPlus className="text-white text-3xl" /> : <FaStore className="text-white text-3xl" />}
-              </div>
-              <h2 className="text-4xl font-black text-charcoal dark:text-white mb-3">
-                {accountType === 'user' ? 'Create User Account' : 'Create Business Account'}
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                {accountType === 'user' ? 'Join thousands of users discovering local businesses' : 'List your business and reach more customers'}
-              </p>
-            </div>
-
-            <form className="space-y-6">
-              {accountType === 'user' ? (
-                <div className="grid md:grid-cols-2 gap-6">
+            <form onSubmit={nextFromStep} className="space-y-5" noValidate>
+              {/* ── Business step 1: identity ── */}
+              {accountType === 'business' && step === 1 && (
+                <>
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">First Name</label>
-                    <div className="relative">
-                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        <FaUser />
-                      </div>
-                      <input id="firstName" type="text" className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition text-charcoal dark:text-white font-medium" placeholder="John" />
-                    </div>
+                    <label htmlFor="businessName" className="field-label">Business name</label>
+                    <input id="businessName" name="businessName" type="text" required placeholder="e.g. Nkwo Kitchen" className="field" />
                   </div>
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Last Name</label>
-                    <div className="relative">
-                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        <FaUser />
-                      </div>
-                      <input id="lastName" type="text" className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition text-charcoal dark:text-white font-medium" placeholder="Doe" />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="businessName" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Business Name</label>
-                    <div className="relative">
-                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        <FaBriefcase />
-                      </div>
-                      <input id="businessName" type="text" className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/10 transition text-charcoal dark:text-white font-medium" placeholder="My Awesome Business" />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="category" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Category</label>
-                    <div className="relative">
-                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        <FaList />
-                      </div>
-                      <select id="category" className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/10 transition text-charcoal dark:text-white font-medium appearance-none">
-                        <option value="">Select a category</option>
-                        <option value="restaurant">Restaurant</option>
-                        <option value="retail">Retail</option>
-                        <option value="service">Service</option>
-                        <option value="health">Health & Beauty</option>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="category" className="field-label">Category</label>
+                      <select id="category" name="category" className="field" defaultValue="Restaurants">
+                        {CATEGORIES.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
                       </select>
-                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-                        <FaArrowRight className="rotate-90 text-xs" />
-                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="neighborhood" className="field-label">Neighborhood</label>
+                      <select id="neighborhood" name="neighborhood" className="field" defaultValue="Yaba">
+                        {NEIGHBORHOODS.map((n) => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                </div>
+                  <div>
+                    <label htmlFor="address" className="field-label">Street address</label>
+                    <input id="address" name="address" type="text" required placeholder="14 Herbert Macaulay Way" className="field" />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="field-label">Phone / WhatsApp</label>
+                    <div className="relative">
+                      <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden />
+                      <input id="phone" name="phone" type="tel" required placeholder="0803 000 0000" className="field !pl-11" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="businessDescription" className="field-label">
+                      Short description <span className="font-normal text-ink-400">(optional)</span>
+                    </label>
+                    <textarea
+                      id="businessDescription"
+                      name="businessDescription"
+                      rows={3}
+                      placeholder="What makes your business worth a visit?"
+                      className="field resize-none"
+                    />
+                  </div>
+                </>
               )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Email Address</label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                    <FaEnvelope />
+              {/* ── Business step 2: offerings ── */}
+              {accountType === 'business' && step === 2 && (
+                <>
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="font-semibold text-ink-900 dark:text-ink-900-inv inline-flex items-center gap-2 text-[15px]">
+                        <FaBellConcierge className="text-primary dark:text-primary-bright" aria-hidden /> Services
+                      </h2>
+                      <button type="button" onClick={addServiceRow} className="btn-secondary btn-sm">
+                        <FaPlus aria-hidden /> Add
+                      </button>
+                    </div>
+                    {services.length === 0 ? (
+                      <p className="text-sm text-muted italic">No services yet — add bookable services with ₦ prices.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {services.map((s, i) => (
+                          <div key={i} className="grid grid-cols-12 gap-2.5 items-end p-3 bg-sunken-light/50 dark:bg-white/5 rounded-xl">
+                            <div className="col-span-12 sm:col-span-4">
+                              <label className="field-label !mb-1" htmlFor={`sv-name-${i}`}>Service</label>
+                              <input id={`sv-name-${i}`} name="serviceName" defaultValue={s.name} placeholder="Signature Cut" className="field" />
+                            </div>
+                            <div className="col-span-5 sm:col-span-3">
+                              <label className="field-label !mb-1" htmlFor={`sv-price-${i}`}>Price</label>
+                              <input id={`sv-price-${i}`} name="servicePrice" defaultValue={s.price} placeholder="₦5,000" className="field" />
+                            </div>
+                            <div className="col-span-5 sm:col-span-2">
+                              <label className="field-label !mb-1" htmlFor={`sv-dur-${i}`}>Duration</label>
+                              <input id={`sv-dur-${i}`} name="serviceDuration" defaultValue={s.duration} placeholder="45 min" className="field" />
+                            </div>
+                            <div className="col-span-10 sm:col-span-2">
+                              <label className="field-label !mb-1" htmlFor={`sv-desc-${i}`}>Notes</label>
+                              <input id={`sv-desc-${i}`} name="serviceDescription" defaultValue={s.description} placeholder="Optional" className="field" />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1">
+                              <button
+                                type="button"
+                                onClick={() => setServices(services.filter((_, idx) => idx !== i))}
+                                className="w-full py-2.5 rounded-lg text-danger border border-danger/30 hover:bg-danger-soft dark:hover:bg-danger/10 transition inline-flex items-center justify-center"
+                                aria-label={`Remove service ${i + 1}`}
+                              >
+                                <FaTrash aria-hidden />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <input id="email" type="email" className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition text-charcoal dark:text-white font-medium" placeholder="john.doe@example.com" />
-                </div>
-              </div>
 
-              <div>
-                <label htmlFor="phone" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Phone Number</label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                    <FaPhone />
+                  <div className="pt-2 border-t border-line-light dark:border-line-dark">
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="font-semibold text-ink-900 dark:text-ink-900-inv inline-flex items-center gap-2 text-[15px]">
+                        <FaBoxOpen className="text-accent dark:text-accent-bright" aria-hidden /> Storefront products
+                      </h2>
+                      <button type="button" onClick={addProductRow} className="btn-secondary btn-sm">
+                        <FaPlus aria-hidden /> Add
+                      </button>
+                    </div>
+                    {products.length === 0 ? (
+                      <p className="text-sm text-muted italic">
+                        No products yet — these appear in your Finda storefront for ordering.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {products.map((p, i) => (
+                          <div key={i} className="grid grid-cols-12 gap-2.5 items-end p-3 bg-sunken-light/50 dark:bg-white/5 rounded-xl">
+                            <div className="col-span-12 sm:col-span-4">
+                              <label className="field-label !mb-1" htmlFor={`pr-name-${i}`}>Product</label>
+                              <input id={`pr-name-${i}`} name="productName" defaultValue={p.name} placeholder="Party Jollof Tray" className="field" />
+                            </div>
+                            <div className="col-span-6 sm:col-span-3">
+                              <label className="field-label !mb-1" htmlFor={`pr-price-${i}`}>Price</label>
+                              <input id={`pr-price-${i}`} name="productPrice" defaultValue={p.price} placeholder="₦6,500" className="field" />
+                            </div>
+                            <div className="col-span-6 sm:col-span-2">
+                              <label className="field-label !mb-1" htmlFor={`pr-stock-${i}`}>Stock</label>
+                              <input id={`pr-stock-${i}`} name="productStock" type="number" min={0} defaultValue={p.stock} placeholder="∞" className="field" />
+                            </div>
+                            <div className="col-span-10 sm:col-span-2">
+                              <label className="field-label !mb-1" htmlFor={`pr-desc-${i}`}>Notes</label>
+                              <input id={`pr-desc-${i}`} name="productDescription" defaultValue={p.description} placeholder="Optional" className="field" />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1">
+                              <button
+                                type="button"
+                                onClick={() => setProducts(products.filter((_, idx) => idx !== i))}
+                                className="w-full py-2.5 rounded-lg text-danger border border-danger/30 hover:bg-danger-soft dark:hover:bg-danger/10 transition inline-flex items-center justify-center"
+                                aria-label={`Remove product ${i + 1}`}
+                              >
+                                <FaTrash aria-hidden />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <input id="phone" type="tel" className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition text-charcoal dark:text-white font-medium" placeholder="+1 (555) 123-4567" />
-                </div>
-              </div>
+                </>
+              )}
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Password</label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                    <FaLock />
+              {/* ── Account details (user flow + business step 3) ── */}
+              {(accountType === 'user' || step === 3) && (
+                <>
+                  {accountType === 'business' && basics && (
+                    <div className="p-4 bg-primary-soft dark:bg-primary/10 rounded-xl text-sm text-primary dark:text-primary-bright font-medium">
+                      {basics.name} · {basics.category} · {basics.neighborhood}
+                      {services.length > 0 && ` · ${services.length} service${services.length > 1 ? 's' : ''}`}
+                      {products.length > 0 && ` · ${products.length} product${products.length > 1 ? 's' : ''}`}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="firstName" className="field-label">First name</label>
+                      <input id="firstName" name="firstName" type="text" required autoComplete="given-name" placeholder="Adaeze" className="field" />
+                    </div>
+                    <div>
+                      <label htmlFor="lastName" className="field-label">Last name</label>
+                      <input id="lastName" name="lastName" type="text" required autoComplete="family-name" placeholder="Nwosu" className="field" />
+                    </div>
                   </div>
-                  <input 
-                    id="password" 
-                    type={showPassword ? "text" : "password"} 
-                    className="w-full pl-12 pr-12 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition text-charcoal dark:text-white font-medium" 
-                    placeholder="••••••••" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button 
-                    type="button" 
-                    aria-label="Toggle password visibility" 
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal"
-                    onClick={() => setShowPassword(!showPassword)}
+                  <div>
+                    <label htmlFor="email" className="field-label">Email address</label>
+                    <div className="relative">
+                      <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden />
+                      <input id="email" name="email" type="email" required autoComplete="email" placeholder="you@example.com" className="field !pl-11" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="password" className="field-label">Password</label>
+                    <div className="relative">
+                      <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden />
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        autoComplete="new-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="8+ characters"
+                        className="field !pl-11 !pr-11"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-700 dark:hover:text-ink-700-inv"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    {password && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="flex-1 h-1.5 bg-sunken-light dark:bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${meta.color}`}
+                            style={{ width: `${Math.max(score, 8)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-ink-500 dark:text-ink-500-inv min-w-[64px] text-right">
+                          {meta.label}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded accent-[#1F5C45]"
+                />
+                <span className="text-sm text-ink-700 dark:text-ink-700-inv leading-relaxed">
+                  I agree to the{' '}
+                  <Link href="/terms" className="text-primary dark:text-primary-bright font-semibold hover:underline">Terms of Service</Link>
+                  {' '}and{' '}
+                  <Link href="/privacy" className="text-primary dark:text-primary-bright font-semibold hover:underline">Privacy Policy</Link>
+                </span>
+              </label>
+
+              {error && (
+                <p className="text-sm font-semibold text-danger" role="alert">{error}</p>
+              )}
+
+              {/* Navigation */}
+              <div className="flex items-center gap-3">
+                {accountType === 'business' && step > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => { setStep(step - 1); setError(''); }}
+                    className="btn-secondary"
                   >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    Back
                   </button>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-300 ${getStrengthColor(strength)}`} 
-                      style={{ width: `${strength}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs text-gray-500 min-w-[70px] text-right">{getStrengthLabel(strength)}</span>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Confirm Password</label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                    <FaLock />
-                  </div>
-                  <input id="confirmPassword" type="password" className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition text-charcoal dark:text-white font-medium" placeholder="••••••••" />
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <input type="checkbox" id="terms" className="w-5 h-5 mt-0.5 rounded border-2 border-gray-300 dark:border-gray-600 text-teal focus:ring-teal" />
-                <label htmlFor="terms" className="text-sm text-gray-600 dark:text-gray-400">
-                  I agree to the <a href="#" className="text-teal font-semibold hover:underline">Terms of Service</a> and <a href="#" className="text-teal font-semibold hover:underline">Privacy Policy</a>
-                </label>
-              </div>
-
-              <button type="submit" className={`w-full px-8 py-4 text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${accountType === 'user' ? 'bg-teal hover:bg-teal/90' : 'bg-indigo hover:bg-indigo/90'}`}>
-                <span>{accountType === 'user' ? 'Create User Account' : 'Create Business Account'}</span>
-                <FaArrowRight />
-              </button>
-
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-frost dark:bg-charcoal text-gray-500 font-medium">Or continue with</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <button type="button" aria-label="Sign up with Google" className="px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-teal transition flex items-center justify-center gap-2">
-                  <FaGoogle className="text-xl text-red-500" />
-                </button>
-                <button type="button" aria-label="Sign up with Apple" className="px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-teal transition flex items-center justify-center gap-2">
-                  <FaApple className="text-xl text-charcoal dark:text-white" />
-                </button>
-                <button type="button" aria-label="Sign up with Facebook" className="px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-teal transition flex items-center justify-center gap-2">
-                  <FaFacebook className="text-xl text-blue-600" />
+                )}
+                <button type="submit" disabled={submitting} className="btn-primary flex-1">
+                  {submitting ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-label="Creating account" />
+                  ) : (
+                    <>
+                      {accountType === 'user'
+                        ? 'Create my account'
+                        : step === 1
+                        ? 'Continue to services'
+                        : step === 2
+                        ? 'Continue to account'
+                        : 'Submit for verification'}
+                      <FaArrowRight className="text-sm" aria-hidden />
+                    </>
+                  )}
                 </button>
               </div>
 
-              <p className="text-center text-gray-600 dark:text-gray-400 text-sm">
-                Already have an account? <Link href="/signin" className="text-teal font-semibold hover:underline">Sign In</Link>
+              <p className="text-center text-sm text-muted">
+                Already have an account?{' '}
+                <Link href="/signin" className="text-primary dark:text-primary-bright font-semibold hover:underline">
+                  Sign in
+                </Link>
               </p>
             </form>
           </div>
-        </div>
-      </section>
 
-      <section id="onboarding-steps" className="py-20 bg-white dark:bg-charcoal">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16 fade-in-up">
-            <h2 className="text-4xl lg:text-5xl font-black text-charcoal dark:text-white mb-4">What Happens Next?</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">Your journey to discovering amazing businesses</p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="text-center fade-in-up delay-1">
-              <div className="relative inline-block mb-6">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-teal to-teal/80 flex items-center justify-center shadow-xl">
-                  <FaEnvelopeOpen className="text-white text-3xl" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg border-2 border-teal">
-                  <span className="text-teal font-black text-lg">1</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-charcoal dark:text-white mb-3">Verify Email</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Check your inbox for a verification link to activate your account</p>
-            </div>
-
-            <div className="text-center fade-in-up delay-2">
-              <div className="relative inline-block mb-6">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo to-indigo/80 flex items-center justify-center shadow-xl">
-                  <FaUserGear className="text-white text-3xl" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg border-2 border-indigo">
-                  <span className="text-indigo font-black text-lg">2</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-charcoal dark:text-white mb-3">Complete Profile</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Add your details and preferences to get personalized recommendations</p>
-            </div>
-             <div className="text-center fade-in-up delay-3">
-              <div className="relative inline-block mb-6">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-teal to-teal/80 flex items-center justify-center shadow-xl">
-                  <FaRocket className="text-white text-3xl" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg border-2 border-teal">
-                  <span className="text-teal font-black text-lg">3</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-charcoal dark:text-white mb-3">Start Exploring</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Browse thousands of businesses and book your first appointment</p>
-            </div>
-             <div className="text-center fade-in-up delay-4">
-              <div className="relative inline-block mb-6">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo to-indigo/80 flex items-center justify-center shadow-xl">
-                  <FaStar className="text-white text-3xl" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg border-2 border-indigo">
-                  <span className="text-indigo font-black text-lg">4</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-charcoal dark:text-white mb-3">Earn Rewards</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Collect points with every booking and unlock exclusive perks</p>
-            </div>
+          {/* What happens next */}
+          <div className="mt-8 card p-6">
+            <h2 className="font-semibold text-ink-900 dark:text-ink-900-inv mb-4 text-sm uppercase tracking-[0.1em]">
+              What happens next
+            </h2>
+            <ol className="space-y-3">
+              {(accountType === 'user'
+                ? ['Confirm your email address', 'Explore and save your first spots', 'Book or order — reminders included']
+                : ['We review your listing (usually 1–2 days)', 'Get your verified badge', 'Your storefront goes live for orders']
+              ).map((stepText, i) => (
+                <li key={stepText} className="flex items-center gap-3 text-sm text-ink-700 dark:text-ink-700-inv">
+                  <span className="w-6 h-6 rounded-full bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright text-xs font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  {stepText}
+                  {i === 2 && <FaCircleCheck className="text-success ml-auto" aria-hidden />}
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
-      </section>
+      </main>
 
       <Footer />
     </div>
+  );
+}
+
+export default function GetStarted() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-paper-light dark:bg-paper-dark" />}>
+      <GetStartedContent />
+    </Suspense>
   );
 }

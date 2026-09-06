@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#1F5C45"/>
+  <!-- location pin -->
+  <path d="M32 12c-7.7 0-14 6.3-14 14 0 10.5 14 22 14 22s14-11.5 14-22c0-7.7-6.3-14-14-14z" fill="#F7F5F0"/>
+  <circle cx="32" cy="26" r="6" fill="#C25F04"/>
+  <!-- f descender detail -->
+  <rect x="30.5" y="40" width="3" height="8" rx="1.5" fill="#F7F5F0" opacity="0.9"/>
+</svg>

@@ -1,199 +1,162 @@
 "use client";
 
 import React, { useState } from 'react';
+import { FaEnvelope, FaPhone, FaPaperPlane, FaCircleCheck, FaClock } from 'react-icons/fa6';
 import Header from '@/components/landing/Header';
 import Footer from '@/components/landing/Footer';
-import { FaEnvelope, FaLocationDot, FaPhone, FaPaperPlane, FaCheck } from 'react-icons/fa6';
+
+const CHANNELS = [
+  {
+    icon: FaEnvelope,
+    title: 'Email us',
+    detail: 'hello@finda.ng',
+    sub: 'We reply within one business day',
+  },
+  {
+    icon: FaPhone,
+    title: 'Call or WhatsApp',
+    detail: '+234 810 555 0134',
+    sub: 'Mon–Sat, 8 AM – 7 PM WAT',
+  },
+  {
+    icon: FaClock,
+    title: 'Support hours',
+    detail: '7 days a week',
+    sub: 'Business owners get priority routing',
+  },
+];
 
 export default function ContactUs() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
+  const [form, setForm] = useState({ name: '', email: '', topic: 'General', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
+    // Demo mode: with Supabase + email service this creates a support ticket.
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSent(true);
-    }, 1500);
+    }, 800);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
+    <div className="min-h-screen bg-paper-light dark:bg-paper-dark">
       <Header />
-      
-      <main className="pt-28 pb-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Hero Section */}
-          <div className="text-center mb-16 max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-black text-charcoal dark:text-white mb-6">
-              Get in Touch
+
+      <main className="pt-32 pb-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="max-w-2xl mb-14">
+            <p className="eyebrow mb-4">Contact</p>
+            <h1 className="text-display-lg font-bold text-ink-900 dark:text-ink-900-inv mb-4">
+              Talk to a real person
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              Have questions about Finda? We&apos;re here to help. Reach out to our team and we&apos;ll get back to you as soon as possible.
+            <p className="text-lg text-muted leading-relaxed">
+              Questions about your account, a business listing, or the platform?
+              We&apos;re a small team that actually reads every message.
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-12">
-            {/* Contact Info */}
-            <div className="lg:col-span-1 space-y-8">
-              <div className="bg-white dark:bg-white/5 rounded-3xl p-8 border border-gray-100 dark:border-white/10 shadow-lg">
-                <h3 className="text-2xl font-bold text-charcoal dark:text-white mb-6">Contact Info</h3>
-                
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-teal/10 flex items-center justify-center flex-shrink-0 text-teal text-xl">
-                      <FaLocationDot />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-charcoal dark:text-white mb-1">Our Office</h4>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">
-                        123 Innovation Drive<br />
-                        San Francisco, CA 94103
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-indigo/10 flex items-center justify-center flex-shrink-0 text-indigo text-xl">
-                      <FaEnvelope />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-charcoal dark:text-white mb-1">Email Us</h4>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">
-                        support@finda.com<br />
-                        partners@finda.com
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center flex-shrink-0 text-purple-600 text-xl">
-                      <FaPhone />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-charcoal dark:text-white mb-1">Call Us</h4>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">
-                        +1 (555) 123-4567<br />
-                        Mon-Fri, 9am-6pm PST
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-teal text-white rounded-3xl p-8 shadow-xl relative overflow-hidden">
-                <div className="relative z-10">
-                  <h3 className="text-2xl font-bold mb-4">FAQ</h3>
-                  <p className="mb-6 opacity-90">Find answers to common questions about using Finda.</p>
-                  <button className="px-6 py-3 bg-white text-teal font-bold rounded-xl hover:bg-gray-50 transition shadow-lg w-full">
-                    Visit Help Center
+          <div className="grid lg:grid-cols-[1fr_380px] gap-10">
+            {/* Form */}
+            <div className="card p-8">
+              {isSent ? (
+                <div className="text-center py-12">
+                  <span className="w-16 h-16 rounded-full bg-success-soft dark:bg-success/15 text-success flex items-center justify-center mx-auto mb-5">
+                    <FaCircleCheck className="text-2xl" aria-hidden />
+                  </span>
+                  <h2 className="font-display text-2xl font-semibold text-ink-900 dark:text-ink-900-inv mb-2">
+                    Message sent
+                  </h2>
+                  <p className="text-muted mb-8 max-w-sm mx-auto">
+                    Thanks, {form.name.split(' ')[0] || 'friend'} — we&apos;ll
+                    get back to you at <strong>{form.email}</strong> within one
+                    business day.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setIsSent(false);
+                      setForm({ name: '', email: '', topic: 'General', message: '' });
+                    }}
+                    className="btn-secondary btn-sm"
+                  >
+                    Send another message
                   </button>
                 </div>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-              </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <label htmlFor="name" className="field-label">Your name</label>
+                      <input id="name" name="name" required value={form.name} onChange={handleChange} placeholder="Maya O." className="field" />
+                    </div>
+                    <div>
+                      <label htmlFor="cemail" className="field-label">Email</label>
+                      <input id="cemail" name="email" type="email" required value={form.email} onChange={handleChange} placeholder="you@example.com" className="field" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="topic" className="field-label">Topic</label>
+                    <select id="topic" name="topic" value={form.topic} onChange={handleChange} className="field">
+                      <option>General question</option>
+                      <option>My business listing</option>
+                      <option>Report a problem</option>
+                      <option>Press & partnerships</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="message" className="field-label">Message</label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      required
+                      rows={6}
+                      value={form.message}
+                      onChange={handleChange}
+                      placeholder="How can we help?"
+                      className="field resize-none"
+                    />
+                  </div>
+
+                  <button type="submit" disabled={isSubmitting} className="btn-primary w-full sm:w-auto">
+                    {isSubmitting ? (
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-label="Sending" />
+                    ) : (
+                      <><FaPaperPlane aria-hidden /> Send message</>
+                    )}
+                  </button>
+                </form>
+              )}
             </div>
 
-            {/* Contact Form */}
-            <div className="lg:col-span-2">
-              <div className="bg-white dark:bg-white/5 rounded-3xl p-8 lg:p-12 border border-gray-100 dark:border-white/10 shadow-lg h-full">
-                {isSent ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                    <div className="w-20 h-20 bg-green-100 dark:bg-green-900/20 text-green-600 rounded-full flex items-center justify-center text-3xl mb-6 animate-in zoom-in">
-                      <FaCheck />
-                    </div>
-                    <h3 className="text-2xl font-bold text-charcoal dark:text-white mb-2">Message Sent!</h3>
-                    <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-8">
-                      Thank you for contacting us. We&apos;ve received your message and will get back to you shortly.
-                    </p>
-                    <button 
-                      type="button"
-                      onClick={() => { setIsSent(false); setFormData({ name: '', email: '', subject: '', message: '' }); }}
-                      className="px-8 py-3 bg-teal text-white font-bold rounded-xl hover:bg-teal/90 transition shadow-lg"
-                    >
-                      Send Another Message
-                    </button>
+            {/* Channels */}
+            <div className="space-y-4">
+              {CHANNELS.map((c) => (
+                <div key={c.title} className="card p-6 flex gap-4">
+                  <span className="w-11 h-11 rounded-xl bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright flex items-center justify-center shrink-0">
+                    <c.icon aria-hidden />
+                  </span>
+                  <div>
+                    <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv text-[15px]">{c.title}</h3>
+                    <p className="text-ink-700 dark:text-ink-700-inv font-medium text-sm">{c.detail}</p>
+                    <p className="text-xs text-muted mt-0.5">{c.sub}</p>
                   </div>
-                ) : (
-                  <>
-                    <h3 className="text-2xl font-bold text-charcoal dark:text-white mb-8">Send us a Message</h3>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          <label htmlFor="name" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Your Name</label>
-                          <input 
-                            id="name"
-                            type="text" 
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/20 transition"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="email" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Email Address</label>
-                          <input 
-                            id="email"
-                            type="email" 
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/20 transition"
-                            required
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="subject" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Subject</label>
-                        <input 
-                          id="subject"
-                          type="text" 
-                          name="subject"
-                          value={formData.subject}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/20 transition"
-                          required
-                        />
-                      </div>
+                </div>
+              ))}
 
-                      <div>
-                        <label htmlFor="message" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Message</label>
-                        <textarea 
-                          id="message"
-                          name="message"
-                          value={formData.message}
-                          onChange={handleChange}
-                          rows={6}
-                          className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal/20 transition resize-none"
-                          required
-                        ></textarea>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <button 
-                          type="submit" 
-                          disabled={isSubmitting}
-                          className="px-8 py-4 bg-teal text-white font-bold rounded-xl hover:bg-teal/90 transition shadow-lg disabled:opacity-70 flex items-center gap-2"
-                        >
-                          {isSubmitting ? 'Sending...' : <><FaPaperPlane /> Send Message</>}
-                        </button>
-                      </div>
-                    </form>
-                  </>
-                )}
+              <div className="card p-6 bg-primary-soft dark:bg-primary/10 border-primary/20 dark:border-primary/20">
+                <h3 className="font-semibold text-primary dark:text-primary-bright text-[15px] mb-1.5">Business owner?</h3>
+                <p className="text-sm text-ink-700 dark:text-ink-700-inv leading-relaxed">
+                  Check the <a href="/for-business" className="font-semibold underline">For Business</a> page first —
+                  most listing questions are answered there.
+                </p>
               </div>
             </div>
           </div>

@@ -1,170 +1,203 @@
 "use client";
 
-import Header from '@/components/landing/Header';
-import Footer from '@/components/landing/Footer';
-import Image from 'next/image';
-import { FaCalendarCheck, FaHeart, FaUser, FaGear, FaBell, FaStar } from 'react-icons/fa6';
 import Link from 'next/link';
+import Image from 'next/image';
+import { FaCalendarCheck, FaHeart, FaUser, FaGear, FaBell, FaStar, FaArrowRight, FaBagShopping, FaNewspaper } from 'react-icons/fa6';
+import { PageShell, PageTitle, SideNavItem } from '@/components/PageShell';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { useSession } from '@/lib/session/SessionProvider';
+import * as store from '@/lib/data/demo';
+import { useStoreVersion } from '@/lib/hooks/useStore';
 
 export default function UserDashboard() {
-  const upcomingBookings = [
-    {
-      id: 1,
-      business: "The Rustic Spoon",
-      service: "Dinner Reservation",
-      date: "Today, 7:00 PM",
-      status: "Confirmed",
-      image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
-    },
-    {
-      id: 2,
-      business: "Glow Spa & Wellness",
-      service: "Deep Tissue Massage",
-      date: "Tomorrow, 10:00 AM",
-      status: "Pending",
-      image: "https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
-    }
-  ];
+  return (
+    <AuthGuard>
+      <UserDashboardContent />
+    </AuthGuard>
+  );
+}
 
-  const favorites = [
-    {
-      id: 1,
-      name: "Urban Coffee Roasters",
-      category: "Cafe",
-      rating: 4.9,
-      image: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
-    },
-    {
-      id: 2,
-      name: "Elite Fitness Gym",
-      category: "Fitness",
-      rating: 4.7,
-      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80"
-    }
+function UserDashboardContent() {
+  useStoreVersion();
+  const { user: sessionUser } = useSession();
+
+  const bookings = store.getBookings();
+  const favorites = store.getFavoriteBusinesses();
+  const notifications = store.getNotifications();
+  const user = sessionUser
+    ? {
+        firstName: sessionUser.firstName,
+        lastName: sessionUser.lastName,
+        email: sessionUser.email,
+        memberSince: store.currentUser.memberSince,
+      }
+    : store.currentUser;
+
+  const upcoming = bookings.filter((b) => b.status === 'confirmed' || b.status === 'pending');
+  const completed = bookings.filter((b) => b.status === 'completed');
+  const unread = notifications.filter((n) => !n.read).length;
+
+  const stats = [
+    { label: 'Upcoming bookings', value: upcoming.length, icon: FaCalendarCheck, tint: 'bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright' },
+    { label: 'Saved places', value: favorites.length, icon: FaHeart, tint: 'bg-danger-soft dark:bg-danger/15 text-danger dark:text-danger-bright' },
+    { label: 'Completed visits', value: completed.length, icon: FaStar, tint: 'bg-gold-soft dark:bg-gold/15 text-gold dark:text-gold-bright' },
   ];
 
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
-      <Header />
-      
-      <main className="pt-28 pb-20 px-6 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-gray-100 dark:border-white/10 sticky top-28">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal to-teal/70 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                  JD
+    <PageShell wide>
+      <div className="grid lg:grid-cols-[250px_1fr] gap-10">
+        {/* Sidebar */}
+        <aside>
+          <div className="card p-5 sticky top-28">
+            <div className="flex items-center gap-3 mb-7">
+              <span className="w-11 h-11 rounded-full bg-primary text-white font-display font-bold flex items-center justify-center">
+                {user.firstName[0]}{user.lastName[0]}
+              </span>
+              <div>
+                <div className="font-semibold text-ink-900 dark:text-ink-900-inv text-sm">
+                  {user.firstName} {user.lastName}
                 </div>
-                <div>
-                  <div className="font-bold text-charcoal dark:text-white">John Doe</div>
-                  <div className="text-xs text-gray-500">Member since 2024</div>
-                </div>
+                <div className="text-xs text-ink-400 dark:text-ink-400-inv">Member since {user.memberSince}</div>
               </div>
-              
-              <nav className="space-y-2">
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 bg-teal/10 text-teal rounded-xl font-semibold transition">
-                  <FaUser /> Dashboard
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition">
-                  <FaCalendarCheck /> My Bookings
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition">
-                  <FaHeart /> Favorites
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition">
-                  <FaBell /> Notifications
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition">
-                  <FaGear /> Settings
-                </Link>
-              </nav>
             </div>
+            <nav className="space-y-1.5" aria-label="Account">
+              <SideNavItem href="/dashboard" icon={<FaUser />} label="Dashboard" active />
+              <SideNavItem href="/feed" icon={<FaNewspaper />} label="My feed" />
+              <SideNavItem href="/bookings" icon={<FaCalendarCheck />} label="My bookings" />
+              <SideNavItem href="/orders" icon={<FaBagShopping />} label="My orders" />
+              <SideNavItem href="/notifications" icon={<FaBell />} label="Notifications" />
+              <SideNavItem href="/settings" icon={<FaGear />} label="Settings" />
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main */}
+        <div className="min-w-0">
+          <PageTitle
+            title={`Welcome back, ${user.firstName}`}
+            subtitle="Here's what's happening in your neighborhood."
+            action={
+              <Link href="/search" className="btn-primary btn-sm shrink-0">
+                Find new places <FaArrowRight className="text-xs" aria-hidden />
+              </Link>
+            }
+          />
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-10">
+            {stats.map((s) => (
+              <div key={s.label} className="card p-5">
+                <span className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${s.tint}`}>
+                  <s.icon aria-hidden />
+                </span>
+                <div className="font-display text-3xl font-bold text-ink-900 dark:text-ink-900-inv">{s.value}</div>
+                <div className="text-xs font-semibold text-ink-400 dark:text-ink-400-inv mt-0.5">{s.label}</div>
+              </div>
+            ))}
           </div>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-8">
-            {/* Welcome Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-black text-charcoal dark:text-white">Welcome back, John! 👋</h1>
-                <p className="text-gray-600 dark:text-gray-400">Here&apos;s what&apos;s happening with your account today.</p>
-              </div>
-              <button className="px-6 py-3 bg-teal text-white font-bold rounded-xl hover:bg-teal/90 transition shadow-lg shadow-teal/20">
-                Find New Places
-              </button>
+          {/* Upcoming bookings */}
+          <section className="mb-10">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv">Upcoming bookings</h2>
+              <Link href="/bookings" className="text-sm font-semibold text-primary dark:text-primary-bright hover:underline">
+                View all
+              </Link>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-white/5 p-6 rounded-2xl border border-gray-100 dark:border-white/10">
-                <div className="text-4xl font-bold text-teal mb-2">12</div>
-                <div className="text-sm text-gray-500 font-bold">Total Bookings</div>
+            {upcoming.length === 0 ? (
+              <div className="card p-10 text-center">
+                <p className="text-muted mb-5">No upcoming bookings yet.</p>
+                <Link href="/search" className="btn-primary btn-sm">Explore businesses</Link>
               </div>
-              <div className="bg-white dark:bg-white/5 p-6 rounded-2xl border border-gray-100 dark:border-white/10">
-                <div className="text-4xl font-bold text-purple-500 mb-2">5</div>
-                <div className="text-sm text-gray-500 font-bold">Favorites</div>
-              </div>
-              <div className="bg-white dark:bg-white/5 p-6 rounded-2xl border border-gray-100 dark:border-white/10">
-                <div className="text-4xl font-bold text-yellow-500 mb-2">3</div>
-                <div className="text-sm text-gray-500 font-bold">Reviews</div>
-              </div>
-            </div>
-
-            {/* Upcoming Bookings */}
-            <div>
-              <h2 className="text-xl font-bold text-charcoal dark:text-white mb-6">Upcoming Bookings</h2>
-              <div className="space-y-4">
-                {upcomingBookings.map((booking) => (
-                  <div key={booking.id} className="flex items-center gap-4 bg-white dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/10 hover:border-teal/30 transition group">
-                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 relative">
-                      <Image src={booking.image} alt={booking.business} fill className="object-cover group-hover:scale-110 transition duration-500" />
+            ) : (
+              <div className="space-y-3">
+                {upcoming.map((booking) => (
+                  <div key={booking.id} className="card card-hover p-4 flex items-center gap-4">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-sunken-light shrink-0">
+                      <Image src={booking.businessImage} alt={booking.businessName} fill sizes="64px" className="object-cover" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-charcoal dark:text-white">{booking.business}</h3>
-                      <div className="text-sm text-gray-500">{booking.service}</div>
-                      <div className="flex items-center gap-2 mt-2 text-xs font-bold">
-                        <span className="px-2 py-1 bg-teal/10 text-teal rounded-lg">{booking.date}</span>
-                        <span className={`px-2 py-1 rounded-lg ${booking.status === 'Confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv truncate">{booking.businessName}</h3>
+                      <p className="text-sm text-muted truncate">{booking.serviceName}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-xs font-semibold text-ink-500 dark:text-ink-500-inv">
+                          {new Date(`${booking.date}T00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {booking.time}
+                        </span>
+                        <span className={`badge text-[10px] ${booking.status === 'confirmed' ? 'badge-success' : 'badge-accent'}`}>
                           {booking.status}
                         </span>
                       </div>
                     </div>
-                    <button className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-teal border border-gray-200 dark:border-white/10 rounded-lg hover:border-teal transition">
-                      Manage
-                    </button>
+                    <Link href={`/business/${booking.businessId}`} className="btn-secondary btn-sm shrink-0 hidden sm:inline-flex">
+                      View
+                    </Link>
                   </div>
                 ))}
               </div>
+            )}
+          </section>
+
+          {/* Favorites */}
+          <section>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv">Your favorites</h2>
+              <Link href="/favorites" className="text-sm font-semibold text-primary dark:text-primary-bright hover:underline">
+                View all
+              </Link>
             </div>
 
-            {/* Favorites */}
-            <div>
-              <h2 className="text-xl font-bold text-charcoal dark:text-white mb-6">Your Favorites</h2>
-              <div className="grid sm:grid-cols-2 gap-6">
-                {favorites.map((fav) => (
-                  <div key={fav.id} className="bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 hover:shadow-lg transition group">
-                    <div className="h-32 overflow-hidden relative">
-                      <Image src={fav.image} alt={fav.name} fill className="object-cover group-hover:scale-105 transition duration-500" />
-                      <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-red-500 shadow-sm z-10">
-                        <FaHeart />
+            {favorites.length === 0 ? (
+              <div className="card p-10 text-center">
+                <p className="text-muted mb-5">You haven&apos;t saved any spots yet — tap the heart on any business.</p>
+                <Link href="/search" className="btn-primary btn-sm">Start exploring</Link>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {favorites.slice(0, 4).map((business) => (
+                  <Link
+                    key={business.id}
+                    href={`/business/${business.id}`}
+                    className="card card-hover p-4 flex items-center gap-4 group"
+                  >
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-sunken-light shrink-0">
+                      <Image src={business.image} alt={business.name} fill sizes="64px" className="object-cover group-hover:scale-105 transition duration-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-primary dark:text-primary-bright">{business.category}</div>
+                      <h3 className="font-semibold text-ink-900 dark:text-ink-900-inv truncate">{business.name}</h3>
+                      <div className="flex items-center gap-1 text-xs mt-0.5">
+                        <FaStar className="text-gold" aria-hidden />
+                        <span className="font-bold text-ink-900 dark:text-ink-900-inv">{business.rating.toFixed(1)}</span>
+                        <span className="text-ink-400 dark:text-ink-400-inv">({business.reviewCount})</span>
                       </div>
                     </div>
-                    <div className="p-4">
-                      <div className="text-xs font-bold text-teal mb-1">{fav.category}</div>
-                      <h3 className="font-bold text-charcoal dark:text-white mb-2">{fav.name}</h3>
-                      <div className="flex items-center gap-1 text-sm text-yellow-500">
-                        <FaStar /> <span className="font-bold text-charcoal dark:text-white">{fav.rating}</span>
-                      </div>
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
-            </div>
-          </div>
+            )}
+          </section>
+
+          {/* Notification nudge */}
+          {unread > 0 && (
+            <Link
+              href="/notifications"
+              className="mt-10 card p-5 flex items-center gap-4 border-primary/30 dark:border-primary/30 hover:border-primary/60 transition group"
+            >
+              <span className="w-10 h-10 rounded-xl bg-primary-soft dark:bg-primary/15 text-primary dark:text-primary-bright flex items-center justify-center shrink-0">
+                <FaBell aria-hidden />
+              </span>
+              <div className="flex-1">
+                <div className="font-semibold text-ink-900 dark:text-ink-900-inv text-sm">
+                  {unread} unread notification{unread > 1 ? 's' : ''}
+                </div>
+                <div className="text-xs text-muted">Booking updates and replies are waiting</div>
+              </div>
+              <FaArrowRight className="text-ink-300 group-hover:text-primary transition" aria-hidden />
+            </Link>
+          )}
         </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </PageShell>
   );
 }

@@ -1,59 +1,70 @@
-import { FaHeart, FaStar } from 'react-icons/fa6';
+import { FaStar } from 'react-icons/fa6';
+import Reveal from '@/components/Reveal';
+
+const TESTIMONIALS = [
+  {
+    text: 'The party jollof at Nkwo Kitchen tastes like a proper owambe. Finda’s verified reviews pointed us there — we’ve been regulars since.',
+    name: 'Chiamaka Obi',
+    role: 'Found Nkwo Kitchen, Yaba',
+    initials: 'CO',
+    tint: 'bg-primary-soft dark:bg-primary/20 text-primary dark:text-primary-bright',
+  },
+  {
+    text: 'Asked the book concierge desk for Nigerian sci-fi and something atmospheric, and walked out with three perfect picks. This app knows Lagos.',
+    name: 'Aisha Musa',
+    role: 'Found Bookshelf Corner',
+    initials: 'AM',
+    tint: 'bg-accent-soft dark:bg-accent/20 text-accent dark:text-accent-bright',
+  },
+  {
+    text: 'First dentist that explains costs before touching anything, and they accept my HMO. Same-week booking through Finda was real, not marketing.',
+    name: 'Ifeoma Kalu',
+    role: 'Found Bright Smile Dental, Gbagada',
+    initials: 'IK',
+    tint: 'bg-gold-soft dark:bg-gold/20 text-gold dark:text-gold-bright',
+  },
+];
 
 export default function Testimonials() {
-  const testimonials = [
-    {
-      text: "Finda made it so easy to discover local businesses I never knew existed. The booking feature is a game-changer!",
-      name: "Emily Rodriguez",
-      role: "Frequent User",
-      avatar: "https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg",
-      delay: "delay-1"
-    },
-    {
-      text: "As a business owner, Finda helped us reach 300% more customers. The premium features are worth every penny.",
-      name: "David Park",
-      role: "Café Owner",
-      avatar: "https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg",
-      delay: "delay-2"
-    },
-    {
-      text: "The map interface is brilliant! I can see all verified businesses around me and book instantly. Love this app!",
-      name: "Jessica Taylor",
-      role: "Professional",
-      avatar: "https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-6.jpg",
-      delay: "delay-3"
-    }
-  ];
-
   return (
-    <section id="testimonials" className="py-20 bg-white dark:bg-charcoal transition-colors duration-300">
+    <section id="testimonials" className="py-24 bg-white dark:bg-surface-dark border-y border-line-light dark:border-line-dark">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16 fade-in-up">
-          <div className="inline-flex items-center gap-2 bg-indigo/10 text-indigo px-4 py-2 rounded-full mb-4">
-            <FaHeart className="text-sm" />
-            <span className="text-sm font-semibold">Testimonials</span>
+        <Reveal>
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <p className="eyebrow mb-4 justify-center">Word of mouth</p>
+            <h2 className="text-display-lg font-bold text-ink-900 dark:text-ink-900-inv mb-4">
+              Reviews from people who actually went
+            </h2>
+            <p className="text-lg text-muted leading-relaxed">
+              Every review on Finda is tied to a real visit. No bots, no
+              revenge rants — just neighbors sharing what’s good.
+            </p>
           </div>
-          <h2 className="text-4xl lg:text-5xl font-black text-charcoal dark:text-white mb-4">Loved by Users & Businesses</h2>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">See what our community has to say</p>
-        </div>
+        </Reveal>
+
         <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
-            <div key={index} className={`glass-effect rounded-2xl p-8 border border-white/40 dark:border-white/10 fade-in-up ${testimonial.delay}`}>
-              <div className="flex items-center gap-1 text-yellow-500 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <FaStar key={i} />
-                ))}
-              </div>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">&quot;{testimonial.text}&quot;</p>
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="w-12 h-12 rounded-full object-cover" src={testimonial.avatar} alt="user avatar" />
-                <div>
-                  <div className="font-bold text-charcoal dark:text-white">{testimonial.name}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">{testimonial.role}</div>
+          {TESTIMONIALS.map((t, i) => (
+            <Reveal key={t.name} delay={i * 100}>
+              <figure className="card card-hover p-7 h-full flex flex-col">
+                <div className="flex gap-1 mb-4" aria-label="5 out of 5 stars">
+                  {[...Array(5)].map((_, j) => (
+                    <FaStar key={j} className="text-gold text-sm" aria-hidden />
+                  ))}
                 </div>
-              </div>
-            </div>
+                <blockquote className="text-ink-700 dark:text-ink-700-inv leading-relaxed flex-1">
+                  &ldquo;{t.text}&rdquo;
+                </blockquote>
+                <figcaption className="flex items-center gap-3 mt-6 pt-6 border-t border-line-light dark:border-line-dark">
+                  <span className={`w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold ${t.tint}`}>
+                    {t.initials}
+                  </span>
+                  <div>
+                    <div className="font-semibold text-ink-900 dark:text-ink-900-inv text-sm">{t.name}</div>
+                    <div className="text-xs text-ink-400 dark:text-ink-400-inv">{t.role}</div>
+                  </div>
+                </figcaption>
+              </figure>
+            </Reveal>
           ))}
         </div>
       </div>

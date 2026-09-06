@@ -1,72 +1,83 @@
 "use client";
 
-import Header from '@/components/landing/Header';
-import { FaCalendarCheck, FaTag, FaCircleInfo } from 'react-icons/fa6';
+import { FaCalendarCheck, FaTag, FaCircleInfo, FaStar, FaCircleCheck } from 'react-icons/fa6';
+import { PageShell, PageTitle } from '@/components/PageShell';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import * as store from '@/lib/data/demo';
+import { useStoreVersion } from '@/lib/hooks/useStore';
+
+const ICONS: Record<string, React.ReactNode> = {
+  booking: <FaCalendarCheck className="text-primary dark:text-primary-bright" aria-hidden />,
+  review: <FaStar className="text-gold" aria-hidden />,
+  promo: <FaTag className="text-accent dark:text-accent-bright" aria-hidden />,
+  system: <FaCircleInfo className="text-ink-500 dark:text-ink-500-inv" aria-hidden />,
+};
 
 export default function NotificationsPage() {
-  const notifications = [
-    {
-      id: 1,
-      type: "booking",
-      title: "Booking Confirmed",
-      message: "Your dinner reservation at The Rustic Spoon has been confirmed for tonight at 7:00 PM.",
-      time: "2 hours ago",
-      read: false,
-      icon: <FaCalendarCheck className="text-green-500" />
-    },
-    {
-      id: 2,
-      type: "promo",
-      title: "Special Offer",
-      message: "Get 20% off your next massage at Glow Spa & Wellness! Valid until Sunday.",
-      time: "1 day ago",
-      read: true,
-      icon: <FaTag className="text-indigo" />
-    },
-    {
-      id: 3,
-      type: "system",
-      title: "Welcome to Finda",
-      message: "Thanks for joining! Complete your profile to get the most out of your experience.",
-      time: "3 days ago",
-      read: true,
-      icon: <FaCircleInfo className="text-teal" />
-    }
-  ];
+  return (
+    <AuthGuard>
+      <NotificationsContent />
+    </AuthGuard>
+  );
+}
+
+function NotificationsContent() {
+  useStoreVersion();
+  const notifications = store.getNotifications();
+  const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
-      <Header />
-      
-      <main className="pt-28 pb-20 px-6 max-w-3xl mx-auto">
-        <div className="flex justify-between items-center mb-10">
-          <div>
-            <h1 className="text-3xl font-black text-charcoal dark:text-white mb-2">Notifications</h1>
-            <p className="text-gray-600 dark:text-gray-400">Stay updated with your activities</p>
-          </div>
-          <button className="text-teal font-bold hover:underline">Mark all as read</button>
-        </div>
+    <PageShell>
+      <PageTitle
+        title="Notifications"
+        subtitle="Booking updates, replies, and offers from your saved spots."
+        action={
+          unread > 0 ? (
+            <button
+              onClick={() => store.markAllNotificationsRead()}
+              className="btn-secondary btn-sm shrink-0"
+            >
+              <FaCircleCheck aria-hidden /> Mark all read ({unread})
+            </button>
+          ) : undefined
+        }
+      />
 
-        <div className="space-y-4">
-          {notifications.map((notification) => (
-            <div key={notification.id} className={`bg-white dark:bg-white/5 p-6 rounded-2xl border ${notification.read ? 'border-gray-100 dark:border-white/10' : 'border-teal/30 bg-teal/5 dark:bg-teal/5'} transition hover:shadow-md flex gap-4`}>
-              <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center flex-shrink-0 shadow-sm">
-                {notification.icon}
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className={`font-bold ${notification.read ? 'text-charcoal dark:text-white' : 'text-teal'}`}>{notification.title}</h3>
-                  <span className="text-xs text-gray-500">{notification.time}</span>
+      {notifications.length === 0 ? (
+        <div className="card p-14 text-center">
+          <h3 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-2">
+            All quiet
+          </h3>
+          <p className="text-muted">Notifications about your bookings will appear here.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {notifications.map((n) => (
+            <div
+              key={n.id}
+              className={`card p-5 flex gap-4 transition ${
+                !n.read ? 'border-primary/40 dark:border-primary/40 bg-primary-soft/40 dark:bg-primary/5' : ''
+              }`}
+            >
+              <span className="w-11 h-11 rounded-xl bg-white dark:bg-white/10 border border-line-light dark:border-line-dark flex items-center justify-center shrink-0 text-lg">
+                {ICONS[n.type]}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-3 mb-0.5">
+                  <h3 className={`font-semibold text-[15px] ${n.read ? 'text-ink-900 dark:text-ink-900-inv' : 'text-primary dark:text-primary-bright'}`}>
+                    {n.title}
+                  </h3>
+                  <span className="text-xs text-ink-400 dark:text-ink-400-inv shrink-0">{n.time}</span>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{notification.message}</p>
+                <p className="text-sm text-ink-700 dark:text-ink-700-inv leading-relaxed">{n.message}</p>
               </div>
-              {!notification.read && (
-                <div className="w-3 h-3 bg-teal rounded-full mt-2"></div>
+              {!n.read && (
+                <span className="w-2.5 h-2.5 rounded-full bg-primary dark:bg-primary-bright mt-1.5 shrink-0" aria-label="Unread" />
               )}
             </div>
           ))}
         </div>
-      </main>
-    </div>
+      )}
+    </PageShell>
   );
 }

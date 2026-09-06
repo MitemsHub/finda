@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { FaEnvelope, FaArrowLeft, FaPaperPlane, FaCircleCheck } from 'react-icons/fa6';
 import Header from '@/components/landing/Header';
 import Footer from '@/components/landing/Footer';
-import { FaShieldHalved, FaEnvelope, FaArrowLeft, FaPaperPlane } from 'react-icons/fa6';
-import Link from 'next/link';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -14,82 +14,82 @@ export default function ForgotPassword() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
+    // Demo mode: simulate send. With Supabase this becomes
+    // supabase.auth.resetPasswordForEmail(email).
     setTimeout(() => {
       setIsLoading(false);
       setIsSent(true);
-    }, 1500);
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
+    <div className="min-h-screen bg-paper-light dark:bg-paper-dark">
       <Header />
-      
-      <main className="pt-32 pb-20 px-6">
-        <div className="max-w-lg mx-auto">
-          <div className="glass-effect dark:glass-dark rounded-3xl p-8 lg:p-12 border border-white/40 dark:border-white/10 shadow-2xl">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-2xl bg-teal/10 flex items-center justify-center mx-auto mb-4">
-                <FaShieldHalved className="text-teal text-2xl" />
-              </div>
-              <h1 className="text-3xl font-black text-charcoal dark:text-white mb-2">Forgot Password?</h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                {isSent 
-                  ? "Check your email for instructions to reset your password." 
-                  : "Enter your email address and we'll send you a link to reset your password."}
-              </p>
-            </div>
 
+      <main className="pt-36 pb-24 px-6">
+        <div className="max-w-md mx-auto">
+          <div className="card p-8 sm:p-10">
             {isSent ? (
-              <div className="text-center">
-                 <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 p-4 rounded-xl mb-6">
-                    <p className="font-semibold">Reset link sent to {email}</p>
-                 </div>
-                 <button 
-                    onClick={() => setIsSent(false)}
-                    className="text-teal font-bold hover:underline"
-                 >
-                    Try another email
-                 </button>
+              <div className="text-center py-4">
+                <span className="w-14 h-14 rounded-full bg-success-soft text-success flex items-center justify-center mx-auto mb-5">
+                  <FaCircleCheck className="text-2xl" aria-hidden />
+                </span>
+                <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-ink-900-inv mb-2">
+                  Check your inbox
+                </h1>
+                <p className="text-muted mb-8 leading-relaxed">
+                  We sent a reset link to <strong className="text-ink-900 dark:text-ink-900-inv">{email}</strong>.
+                  It expires in 60 minutes.
+                </p>
+                <button onClick={() => setIsSent(false)} className="text-primary dark:text-primary-bright font-semibold hover:underline">
+                  Use a different email
+                </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Email Address</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <FaEnvelope className="text-gray-400" />
-                    </div>
-                    <input 
-                      type="email" 
-                      placeholder="you@example.com" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/10 transition text-charcoal dark:text-white font-medium" 
-                      required
-                    />
-                  </div>
-                </div>
+              <>
+                <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-ink-900-inv mb-2">
+                  Reset your password
+                </h1>
+                <p className="text-muted text-[15px] mb-8">
+                  Enter the email you signed up with and we&apos;ll send you a
+                  reset link.
+                </p>
 
-                <button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="w-full px-6 py-4 bg-teal text-white font-bold rounded-xl hover:bg-teal/90 transition shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-                >
-                  {isLoading ? (
-                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <FaPaperPlane /> Send Reset Link
-                    </>
-                  )}
-                </button>
-              </form>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label htmlFor="email" className="field-label">Email address</label>
+                    <div className="relative">
+                      <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden />
+                      <input
+                        id="email"
+                        type="email"
+                        required
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="field !pl-11"
+                      />
+                    </div>
+                  </div>
+
+                  <button type="submit" disabled={isLoading} className="btn-primary w-full">
+                    {isLoading ? (
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-label="Sending" />
+                    ) : (
+                      <><FaPaperPlane aria-hidden /> Send reset link</>
+                    )}
+                  </button>
+                </form>
+              </>
             )}
 
-            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 text-center">
-              <Link href="/signin" className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-charcoal dark:hover:text-white transition font-semibold">
-                <FaArrowLeft /> Back to Sign In
+            <div className="mt-8 pt-6 border-t border-line-light dark:border-line-dark">
+              <Link
+                href="/signin"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-ink-500 dark:text-ink-500-inv hover:text-ink-900 dark:hover:text-ink-900-inv transition"
+              >
+                <FaArrowLeft className="text-xs" aria-hidden /> Back to sign in
               </Link>
             </div>
           </div>

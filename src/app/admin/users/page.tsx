@@ -1,130 +1,119 @@
 "use client";
 
 import { useState } from 'react';
-import Header from '@/components/landing/Header';
-import { FaUsers, FaMagnifyingGlass, FaEllipsisVertical, FaUserShield, FaBan } from 'react-icons/fa6';
+import { FaMagnifyingGlass } from 'react-icons/fa6';
+import { AdminShell } from '@/components/admin/AdminShell';
+
+const USERS = [
+  { name: 'Alice Cooper', email: 'alice@example.com', role: 'User', status: 'Active', joined: 'Aug 12, 2025', bookings: 14 },
+  { name: 'Bob Wilson', email: 'bob@example.com', role: 'Business', status: 'Active', joined: 'Aug 8, 2025', bookings: 0 },
+  { name: 'Charlie Day', email: 'charlie@example.com', role: 'User', status: 'Inactive', joined: 'Jul 30, 2025', bookings: 2 },
+  { name: 'Dana Reeves', email: 'dana@example.com', role: 'Business', status: 'Active', joined: 'Jul 22, 2025', bookings: 0 },
+  { name: 'Elena Foss', email: 'elena@example.com', role: 'Admin', status: 'Active', joined: 'Jul 15, 2025', bookings: 0 },
+  { name: 'Frank Osei', email: 'frank@example.com', role: 'User', status: 'Active', joined: 'Jul 9, 2025', bookings: 7 },
+  { name: 'Grace Liu', email: 'grace@example.com', role: 'User', status: 'Active', joined: 'Jun 28, 2025', bookings: 21 },
+];
 
 export default function AdminUsers() {
-  const [users] = useState([
-    { id: 1, name: "Alice Cooper", email: "alice@example.com", role: "User", status: "Active", joinDate: "2024-01-15" },
-    { id: 2, name: "Bob Wilson", email: "bob@example.com", role: "Business", status: "Active", joinDate: "2024-02-20" },
-    { id: 3, name: "Charlie Day", email: "charlie@example.com", role: "User", status: "Inactive", joinDate: "2024-03-10" },
-    { id: 4, name: "Diana Prince", email: "diana@example.com", role: "Admin", status: "Active", joinDate: "2023-11-05" },
-    { id: 5, name: "Evan Wright", email: "evan@example.com", role: "Business", status: "Suspended", joinDate: "2024-01-30" },
-  ]);
+  const [query, setQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const users = USERS;
 
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = users.filter((u) => {
+    const q = query.toLowerCase();
+    const matchesQuery = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    return matchesQuery && matchesRole;
+  });
 
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
-      <Header />
-      
-      <main className="pt-28 pb-20 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
-          <div>
-            <h1 className="text-3xl font-black text-charcoal dark:text-white flex items-center gap-3">
-              <FaUsers className="text-indigo" /> User Management
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">View and manage all registered users</p>
-          </div>
-          <button className="px-6 py-3 bg-indigo text-white font-bold rounded-xl hover:bg-indigo/90 transition shadow-lg flex items-center gap-2">
-            <FaUserShield /> Add New User
+    <AdminShell
+      title="Users"
+      subtitle="Everyone with a Finda account — customers, owners, and staff."
+      active="/admin/users"
+      action={
+        <div className="relative w-full md:w-72">
+          <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search users…"
+            aria-label="Search users"
+            className="field !pl-11 !py-2.5"
+          />
+        </div>
+      }
+    >
+      <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">
+        {['all', 'User', 'Business', 'Admin'].map((role) => (
+          <button
+            key={role}
+            onClick={() => setRoleFilter(role)}
+            aria-pressed={roleFilter === role}
+            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap capitalize transition ${
+              roleFilter === role
+                ? 'bg-primary text-white'
+                : 'bg-sunken-light dark:bg-white/5 text-ink-700 dark:text-ink-700-inv hover:bg-primary-soft dark:hover:bg-primary/15'
+            }`}
+          >
+            {role === 'all' ? `All (${users.length})` : role}
           </button>
-        </div>
+        ))}
+      </div>
 
-        <div className="bg-white dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h3 className="font-bold text-lg text-charcoal dark:text-white">All Users ({filteredUsers.length})</h3>
-            <div className="relative w-full sm:w-auto">
-              <FaMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-              <input 
-                type="text" 
-                placeholder="Search by name or email..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-80 pl-9 pr-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo/20 text-charcoal dark:text-white"
-              />
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-white/5 text-left">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Joined</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-line-light dark:border-line-dark bg-sunken-light/50 dark:bg-white/5 text-left">
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400 dark:text-ink-400-inv">User</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400 dark:text-ink-400-inv hidden md:table-cell">Role</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400 dark:text-ink-400-inv hidden lg:table-cell">Joined</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400 dark:text-ink-400-inv">Bookings</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-ink-400 dark:text-ink-400-inv">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line-light dark:divide-line-dark">
+              {filtered.map((u) => (
+                <tr key={u.email} className="hover:bg-sunken-light/50 dark:hover:bg-white/5 transition">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <span className="w-9 h-9 rounded-full bg-sunken-light dark:bg-white/10 text-ink-700 dark:text-ink-700-inv text-xs font-bold flex items-center justify-center shrink-0">
+                        {u.name.split(' ').map((n) => n[0]).join('')}
+                      </span>
+                      <div>
+                        <div className="font-semibold text-ink-900 dark:text-ink-900-inv">{u.name}</div>
+                        <div className="text-xs text-muted">{u.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 hidden md:table-cell">
+                    <span className={`badge text-[10px] ${u.role === 'Admin' ? 'badge-danger' : u.role === 'Business' ? 'badge-accent' : 'badge-primary'}`}>
+                      {u.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-ink-700 dark:text-ink-700-inv hidden lg:table-cell">{u.joined}</td>
+                  <td className="px-6 py-4 font-semibold text-ink-900 dark:text-ink-900-inv">{u.bookings}</td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
+                      <span className={`w-2 h-2 rounded-full ${u.status === 'Active' ? 'bg-success' : 'bg-ink-300'}`} aria-hidden />
+                      <span className={u.status === 'Active' ? 'text-success' : 'text-ink-400'}>{u.status}</span>
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo/10 flex items-center justify-center text-indigo font-bold">
-                          {user.name.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-bold text-charcoal dark:text-white text-sm">{user.name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded text-xs font-bold 
-                        ${user.role === 'Admin' ? 'bg-red-100 text-red-600' : 
-                          user.role === 'Business' ? 'bg-purple-100 text-purple-600' : 
-                          'bg-blue-100 text-blue-600'}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`flex items-center gap-1.5 text-xs font-semibold 
-                        ${user.status === 'Active' ? 'text-green-600' : 
-                          user.status === 'Suspended' ? 'text-red-600' : 
-                          'text-gray-400'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full 
-                          ${user.status === 'Active' ? 'bg-green-600' : 
-                            user.status === 'Suspended' ? 'bg-red-600' : 
-                            'bg-gray-400'}`}></span>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {user.joinDate}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 text-gray-400 hover:text-indigo transition" title="Edit">
-                          <FaEllipsisVertical />
-                        </button>
-                        <button className="p-2 text-gray-400 hover:text-red-500 transition" title="Suspend">
-                          <FaBan />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          <div className="p-4 border-t border-gray-100 dark:border-white/10 flex justify-between items-center text-sm text-gray-500">
-            <span>Showing {filteredUsers.length} users</span>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 border border-gray-200 dark:border-white/10 rounded hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-50" disabled>Previous</button>
-              <button className="px-3 py-1 border border-gray-200 dark:border-white/10 rounded hover:bg-gray-50 dark:hover:bg-white/5">Next</button>
-            </div>
-          </div>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-muted">
+                    No users match your search.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      </main>
-    </div>
+      </div>
+    </AdminShell>
   );
 }

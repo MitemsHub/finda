@@ -1,71 +1,79 @@
 "use client";
 
-import Header from '@/components/landing/Header';
-import { FaFloppyDisk, FaGlobe, FaShieldHalved } from 'react-icons/fa6';
+import { useState } from 'react';
+import { FaCircleCheck, FaCircleExclamation } from 'react-icons/fa6';
+import { AdminShell } from '@/components/admin/AdminShell';
 
 export default function AdminSettings() {
+  const [saved, setSaved] = useState(false);
+
+  const save = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
   return (
-    <div className="min-h-screen bg-frost dark:bg-charcoal transition-colors duration-300">
-      <Header />
-      
-      <main className="pt-28 pb-20 px-6 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-black text-charcoal dark:text-white mb-2">Platform Settings</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-10">Configure global application settings</p>
-
-        <div className="space-y-6">
-          {/* General Settings */}
-          <div className="bg-white dark:bg-white/5 rounded-2xl p-8 border border-gray-100 dark:border-white/10">
-            <h2 className="text-xl font-bold text-charcoal dark:text-white mb-6 flex items-center gap-2">
-              <FaGlobe className="text-teal" /> General
-            </h2>
-            <div className="grid gap-6">
-              <div>
-                <label htmlFor="siteName" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Site Name</label>
-                <input id="siteName" type="text" defaultValue="Finda" className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl" />
-              </div>
-              <div>
-                <label htmlFor="supportEmail" className="block text-sm font-bold text-charcoal dark:text-white mb-2">Support Email</label>
-                <input id="supportEmail" type="email" defaultValue="support@finda.com" className="w-full px-4 py-3 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl" />
-              </div>
-            </div>
-          </div>
-
-          {/* Security */}
-          <div className="bg-white dark:bg-white/5 rounded-2xl p-8 border border-gray-100 dark:border-white/10">
-            <h2 className="text-xl font-bold text-charcoal dark:text-white mb-6 flex items-center gap-2">
-              <FaShieldHalved className="text-indigo" /> Security & Maintenance
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-black/20 rounded-xl">
+    <AdminShell
+      title="Platform settings"
+      subtitle="Moderation defaults and integration health."
+      active="/admin/settings"
+    >
+      <form onSubmit={save} className="space-y-6">
+        {/* Moderation */}
+        <div className="card p-7">
+          <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-6">Moderation</h2>
+          <div className="space-y-5">
+            {[
+              { label: 'Require approval for new listings', desc: 'Businesses go live only after an admin reviews them', on: true },
+              { label: 'Auto-flag reviews with links', desc: 'Hold reviews containing URLs for manual review', on: true },
+              { label: 'Allow review edits', desc: 'Users can edit a review within 48 hours of posting', on: false },
+              { label: 'Verified badge required for homepage', desc: 'Only verified businesses appear in featured slots', on: true },
+            ].map((pref) => (
+              <label key={pref.label} className="flex items-center justify-between gap-4 cursor-pointer select-none">
                 <div>
-                  <div className="font-bold text-charcoal dark:text-white">Maintenance Mode</div>
-                  <div className="text-xs text-gray-500">Disable access for non-admins</div>
+                  <div className="font-semibold text-ink-900 dark:text-ink-900-inv text-[15px]">{pref.label}</div>
+                  <div className="text-sm text-muted">{pref.desc}</div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" aria-label="Maintenance Mode" />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo"></div>
-                </label>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-black/20 rounded-xl">
-                <div>
-                  <div className="font-bold text-charcoal dark:text-white">New User Registration</div>
-                  <div className="text-xs text-gray-500">Allow new users to sign up</div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" defaultChecked className="sr-only peer" aria-label="New User Registration" />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal"></div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-             <button className="flex items-center gap-2 px-8 py-3 bg-teal text-white font-bold rounded-xl hover:bg-teal/90 transition shadow-lg">
-               <FaFloppyDisk /> Save Changes
-             </button>
+                <input type="checkbox" defaultChecked={pref.on} className="w-9 h-5 appearance-none rounded-full bg-sunken-light dark:bg-white/10 checked:bg-primary transition-colors relative cursor-pointer shrink-0 before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-transform checked:before:translate-x-4" />
+              </label>
+            ))}
           </div>
         </div>
-      </main>
-    </div>
+
+        {/* Integrations */}
+        <div className="card p-7">
+          <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-ink-900-inv mb-6">Integrations</h2>
+          <ul className="space-y-4 text-sm">
+            {[
+              { name: 'Supabase (database & auth)', status: 'not-configured', detail: 'Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to go live' },
+              { name: 'Email delivery', status: 'demo', detail: 'Simulated in demo mode — wire a provider when ready' },
+              { name: 'Payments', status: 'demo', detail: 'Simulated in demo mode — wire a provider when ready' },
+            ].map((item) => (
+              <li key={item.name} className="flex items-start gap-3 pb-4 border-b border-line-light dark:border-line-dark last:border-0 last:pb-0">
+                <span className={`mt-0.5 shrink-0 ${item.status === 'not-configured' ? 'text-accent' : 'text-ink-400'}`}>
+                  {item.status === 'not-configured'
+                    ? <FaCircleExclamation aria-hidden />
+                    : <FaCircleCheck aria-hidden />}
+                </span>
+                <div>
+                  <div className="font-semibold text-ink-900 dark:text-ink-900-inv">{item.name}</div>
+                  <div className="text-muted">{item.detail}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          {saved && (
+            <span className="text-sm font-semibold text-success flex items-center gap-1.5" role="status">
+              <FaCircleCheck aria-hidden /> Settings saved
+            </span>
+          )}
+          <button type="submit" className="btn-primary">Save settings</button>
+        </div>
+      </form>
+    </AdminShell>
   );
 }
